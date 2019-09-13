@@ -2,7 +2,6 @@
 """Stateful Netflix session management"""
 from __future__ import absolute_import, division, unicode_literals
 
-import traceback
 import time
 from base64 import urlsafe_b64encode
 from functools import wraps
@@ -93,8 +92,7 @@ class NetflixSession(object):
     @property
     def account_hash(self):
         """The unique hash of the current account"""
-        return urlsafe_b64encode(
-            common.get_credentials().get('email', 'NoMail'))
+        return urlsafe_b64encode(common.get_credentials().get('email', 'NoMail')).decode('utf-8')
 
     def update_session_data(self, old_esn=None):
         old_esn = old_esn or g.get_esn()
@@ -197,7 +195,8 @@ class NetflixSession(object):
             website.extract_session_data(self._get('profiles'))
             self.update_session_data()
         except Exception:
-            common.debug(traceback.format_exc())
+            # import traceback
+            # common.debug(traceback.format_exc())
             common.info('Failed to refresh session data, login expired')
             self.session.cookies.clear()
             return False
@@ -214,6 +213,7 @@ class NetflixSession(object):
             except Exception as exc:
                 common.debug(
                     'Failed to load stored cookies: {}'.format(type(exc).__name__))
+                import traceback
                 common.debug(traceback.format_exc())
                 return False
             common.debug('Successfully loaded stored cookies')
@@ -249,6 +249,7 @@ class NetflixSession(object):
                 return False
             website.extract_session_data(login_response)
         except Exception as exc:
+            import traceback
             common.error(traceback.format_exc())
             self.session.cookies.clear()
             raise exc
@@ -484,9 +485,9 @@ def _set_range_selector(paths, range_start, range_end):
 
 def _login_payload(credentials, auth_url):
     return {
-        'userLoginId': credentials['email'],
-        'email': credentials['email'],
-        'password': credentials['password'],
+        'userLoginId': credentials.get('email'),
+        'email': credentials.get('email'),
+        'password': credentials.get('password'),
         'rememberMe': 'true',
         'flow': 'websiteSignUp',
         'mode': 'login',
