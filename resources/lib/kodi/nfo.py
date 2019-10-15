@@ -94,6 +94,7 @@ def create_episode_nfo(episode, season, show):
         'season': season.get('seq'),
         'episode': episode.get('seq'),
         'plot': episode.get('synopsis'),
+        'durationinseconds': episode.get('runtime', 0),
         'runtime': episode.get('runtime', 0) / 60,
         'year': season.get('year'),
         'id': episode.get('id')
@@ -163,7 +164,15 @@ def _add_fanart(root, data):
 def _build_root_node(root_name, tags):
     root = ET.Element(root_name)
     for (k, v) in tags.items():
-        if v:
-            tag = ET.SubElement(root, k)
-            tag.text = unicode(v)
+        if k == 'durationinseconds':
+                tag = ET.SubElement(root, 'fileinfo')
+                tag = ET.SubElement(tag, 'streamdetails')
+                tag = ET.SubElement(tag, 'video')
+                tag = ET.SubElement(tag, k)
+                tag.text = unicode(v)
+        elif v:
+                tag = ET.SubElement(root, k)
+                tag.text = unicode(v)
+
+
     return root
