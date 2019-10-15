@@ -175,6 +175,7 @@ class NetflixSession(object):
                 website.validate_session_data(self._get('profiles'))
                 self.update_session_data()
             except Exception:
+                import traceback
                 common.debug(traceback.format_exc())
                 common.info('Failed to validate session data, login is expired')
                 self.session.cookies.clear()
@@ -195,8 +196,8 @@ class NetflixSession(object):
             website.extract_session_data(self._get('profiles'))
             self.update_session_data()
         except Exception:
-            # import traceback
-            # common.debug(traceback.format_exc())
+            import traceback
+            common.debug(traceback.format_exc())
             common.info('Failed to refresh session data, login expired')
             self.session.cookies.clear()
             return False
