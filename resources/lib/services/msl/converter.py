@@ -1,9 +1,15 @@
 # -*- coding: utf-8 -*-
-"""Manifest format conversion"""
+"""
+    Copyright (C) 2017 Sebastian Golasch (plugin.video.netflix)
+    Copyright (C) 2018 Caphm (original implementation module)
+    Manifest format conversion
+
+    SPDX-License-Identifier: MIT
+    See LICENSES/MIT.md for more information.
+"""
 from __future__ import absolute_import, division, unicode_literals
 import uuid
 import xml.etree.ElementTree as ET
-import xbmc
 
 from resources.lib.globals import g
 import resources.lib.common as common
@@ -11,6 +17,8 @@ import resources.lib.common as common
 
 def convert_to_dash(manifest):
     """Convert a Netflix style manifest to MPEGDASH manifest"""
+    from xbmcaddon import Addon
+    isa_version = Addon('inputstream.adaptive').getAddonInfo('version')
     seconds = manifest['duration'] / 1000
     init_length = seconds / 2 * 12 + 20 * 1000
     duration = "PT" + str(seconds) + ".00S"
@@ -36,12 +44,12 @@ def convert_to_dash(manifest):
     for index, text_track in enumerate(manifest['timedtexttracks']):
         if text_track['isNoneTrack']:
             continue
-        _convert_text_track(text_track, period,
-                            default=(index == default_subtitle_language_index))
+        _convert_text_track(text_track, period, (index == default_subtitle_language_index),
+                            isa_version)
 
     xml = ET.tostring(root, encoding='utf-8', method='xml')
     common.save_file('manifest.mpd', xml)
-    return xml.replace('\n', '').replace('\r', '')
+    return xml.decode('utf-8').replace('\n', '').replace('\r', '').encode('utf-8')
 
 
 def _mpd_manifest_root(duration):
@@ -67,8 +75,8 @@ def _protection_info(manifest):
 
 def _convert_video_track(video_track, period, init_length, protection, drm_streams):
     adaptation_set = ET.SubElement(
-        parent=period,
-        tag='AdaptationSet',
+        period,  # Parent
+        'AdaptationSet',  # Tag
         mimeType='video/mp4',
         contentType='video')
     if protection:
@@ -100,6 +108,8 @@ def _limit_video_resolution(video_tracks, drm_streams):
             res_limit = 1080
         elif max_resolution == 'UHD 4K':
             res_limit = 4096
+        else:
+            return None
         # At least an equal or lower resolution must exist otherwise disable the imposed limit
         for downloadable in video_tracks:
             if downloadable['isDrm'] != drm_streams:
@@ -112,18 +122,18 @@ def _limit_video_resolution(video_tracks, drm_streams):
 def _add_protection_info(adaptation_set, pssh, keyid):
     if keyid:
         protection = ET.SubElement(
-            parent=adaptation_set,
-            tag='ContentProtection',
+            adaptation_set,  # Parent
+            'ContentProtection',  # Tag
             value='cenc',
             schemeIdUri='urn:mpeg:dash:mp4protection:2011').set(
                 'cenc:default_KID', str(uuid.UUID(bytes=keyid)))
     protection = ET.SubElement(
-        parent=adaptation_set,
-        tag='ContentProtection',
+        adaptation_set,  # Parent
+        'ContentProtection',  # Tag
         schemeIdUri='urn:uuid:EDEF8BA9-79D6-4ACE-A3C8-27DCD51D21ED')
     ET.SubElement(
-        parent=protection,
-        tag='widevine:license',
+        protection,  # Parent
+        'widevine:license',  # Tag
         robustness_level='HW_SECURE_CODECS_REQUIRED')
     if pssh:
         ET.SubElement(protection, 'cenc:pssh').text = pssh
@@ -132,8 +142,8 @@ def _add_protection_info(adaptation_set, pssh, keyid):
 def _convert_video_downloadable(downloadable, adaptation_set,
                                 init_length):
     representation = ET.SubElement(
-        parent=adaptation_set,
-        tag='Representation',
+        adaptation_set,  # Parent
+        'Representation',  # Tag
         id=str(downloadable['urls'][0]['cdn_id']),
         width=str(downloadable['res_w']),
         height=str(downloadable['res_h']),
@@ -147,9 +157,11 @@ def _convert_video_downloadable(downloadable, adaptation_set,
 
 
 def _determine_video_codec(content_profile):
-    if 'hevc' in content_profile:
+    if content_profile.startswith('hevc'):
+        if content_profile.startswith('hevc-dv'):
+            return 'dvhe'
         return 'hevc'
-    elif 'vp9' in content_profile:
+    if content_profile.startswith('vp9'):
         return 'vp9.0.' + content_profile[14:16]
     return 'h264'
 
@@ -161,14 +173,18 @@ def _convert_audio_track(audio_track, period, init_length, default, drm_streams)
     default = 'true' if default else 'false'
 
     adaptation_set = ET.SubElement(
-        parent=period,
-        tag='AdaptationSet',
+        period,  # Parent
+        'AdaptationSet',  # Tag
         lang=audio_track['language'],
         contentType='audio',
         mimeType='audio/mp4',
         impaired=impaired,
         original=original,
         default=default)
+    if audio_track['profile'].startswith('ddplus-atmos'):
+        # Append 'ATMOS' description to the dolby atmos streams,
+        # allows users to distinguish the atmos tracks in the audio stream dialog
+        adaptation_set.set('name', 'ATMOS')
     for downloadable in audio_track['streams']:
         # Some audio stream has no drm
         # if downloadable['isDrm'] != drm_streams:
@@ -184,119 +200,131 @@ def _convert_audio_downloadable(downloadable, adaptation_set, init_length,
     if 'ddplus-' in downloadable['content_profile'] or 'dd-' in downloadable['content_profile']:
         codec_type = 'ec-3'
     representation = ET.SubElement(
-        parent=adaptation_set,
-        tag='Representation',
+        adaptation_set,  # Parent
+        'Representation',  # Tag
         id=str(downloadable['urls'][0]['cdn_id']),
         codecs=codec_type,
         bandwidth=str(downloadable['bitrate'] * 1024),
         mimeType='audio/mp4')
     ET.SubElement(
-        parent=representation,
-        tag='AudioChannelConfiguration',
+        representation,  # Parent
+        'AudioChannelConfiguration',  # Tag
         schemeIdUri='urn:mpeg:dash:23003:3:audio_channel_configuration:2011',
         value=channels_count)
     _add_base_url(representation, downloadable['urls'][0]['url'])
     _add_segment_base(representation, init_length)
 
 
-def _convert_text_track(text_track, period, default):
+def _convert_text_track(text_track, period, default, isa_version):
+
     if text_track.get('ttDownloadables'):
         # Only one subtitle representation per adaptationset
         downloadable = text_track['ttDownloadables']
         # common.save_file('downloadable.log', str(downloadable))
 
-        content_profile = downloadable.keys()[0]
+
+        if downloadable.get('simplesdh'):
+            content_profile = 'simplesdh'
+        else:
+            content_profile = list(downloadable)[0]
+        
+
         is_ios8 = content_profile == 'webvtt-lssdh-ios8'
+        impaired = 'true' if text_track['trackType'] == 'ASSISTIVE' else 'false'
+        forced = 'true' if text_track['isForcedNarrative'] else 'false'
+        default = 'true' if default else 'false'
 
         adaptation_set = ET.SubElement(
-            parent=period,
-            tag='AdaptationSet',
+            period,  # Parent
+            'AdaptationSet',  # Tag
             lang=text_track.get('language'),
             codecs=('stpp', 'wvtt')[is_ios8],
             contentType='text',
             mimeType=('application/ttml+xml', 'text/vtt')[is_ios8])
         role = ET.SubElement(
-            parent=adaptation_set,
-            tag='Role',
+            adaptation_set,  # Parent
+            'Role',  # Tag
             schemeIdUri='urn:mpeg:dash:role:2011')
-        if text_track.get('isForcedNarrative'):
-            role.set("value", "forced")
+        # In the future version of InputStream Adaptive, you can set the stream parameters
+        # in the same way as the video stream
+        if common.is_less_version(isa_version, '2.4.3'):
+            # To be removed when the new version is released
+            if forced == 'true':
+                role.set('value', 'forced')
+            else:
+                if default == 'true':
+                    role.set('value', 'main')
         else:
-            if default:
-                role.set("value", "main")
+            adaptation_set.set('impaired', impaired)
+            adaptation_set.set('forced', forced)
+            adaptation_set.set('default', default)
+            role.set('value', 'subtitle')
 
         representation = ET.SubElement(
-            parent=adaptation_set,
-            tag='Representation',
+            adaptation_set,  # Parent
+            'Representation',  # Tag
             nflxProfile=content_profile)
-        _add_base_url(representation, downloadable[content_profile]['downloadUrls'].values()[0])
+        _add_base_url(representation,
+                      list(downloadable[content_profile]['downloadUrls'].values())[0])
 
 
 def _add_base_url(representation, base_url):
-    ET.SubElement(
-        parent=representation,
-        tag='BaseURL').text = base_url
+    ET.SubElement(representation, 'BaseURL').text = base_url
 
 
 def _add_segment_base(representation, init_length):
     ET.SubElement(
-        parent=representation,
-        tag='SegmentBase',
+        representation,  # Parent
+        'SegmentBase',  # Tag
         indexRange='0-' + str(init_length),
         indexRangeExact='true')
 
 
 def _get_default_audio_language(manifest):
-    channelList = {'1.0': '1', '2.0': '2'}
-    channelListDolby = {'5.1': '6', '7.1': '8'}
+    channel_list = {'1.0': '1', '2.0': '2'}
+    channel_list_dolby = {'5.1': '6', '7.1': '8'}
 
     audio_language = common.get_kodi_audio_language()
-
+    index = 0
     # Try to find the preferred language with the right channels
     if g.ADDON.getSettingBool('enable_dolby_sound'):
-        for index, audio_track in enumerate(manifest['audio_tracks']):
-            if audio_track['language'] == audio_language and audio_track['channels'] in channelListDolby:
-                return index
+        index = _find_audio_track_index(manifest, 'language', audio_language, channel_list_dolby)
+
     # If dolby audio track not exists check other channels list
-    for index, audio_track in enumerate(manifest['audio_tracks']):
-        if audio_track['language'] == audio_language and audio_track['channels'] in channelList:
-            return index
-    # If there is no matches to preferred language, try to sets the original language track as default
+    if index is None:
+        index = _find_audio_track_index(manifest, 'language', audio_language, channel_list)
+
+    # If there is no matches to preferred language,
+    # try to sets the original language track as default
     # Check if the dolby audio track in selected language exists
-    if g.ADDON.getSettingBool('enable_dolby_sound'):
-        for index, audio_track in enumerate(manifest['audio_tracks']):
-            if audio_track['isNative'] and audio_track['channels'] in channelListDolby:
-                return index
+    if index is None and g.ADDON.getSettingBool('enable_dolby_sound'):
+        index = _find_audio_track_index(manifest, 'isNative', True, channel_list_dolby)
+
     # If dolby audio track not exists check other channels list
+    if index is None:
+        index = _find_audio_track_index(manifest, 'isNative', True, channel_list)
+    return index
+
+
+def _find_audio_track_index(manifest, property_name, property_value, channel_list):
     for index, audio_track in enumerate(manifest['audio_tracks']):
-        if audio_track['isNative'] and audio_track['channels'] in channelList:
+        if audio_track[property_name] == property_value and audio_track['channels'] in channel_list:
             return index
-    return 0
+    return None
 
 
 def _get_default_subtitle_language(manifest):
     subtitle_language = common.get_kodi_subtitle_language()
-    if subtitle_language != 'forced_only':
-        for index, text_track in enumerate(manifest['timedtexttracks']):
-            if text_track['isNoneTrack']:
-                continue
-            if text_track.get('isForcedNarrative'):
-                continue
-            if text_track['language'] != subtitle_language:
-                continue
-            return index
-        return -1
-
-    if g.ADDON.getSettingBool('forced_subtitle_workaround'):
-        # When we set "forced only" subtitles in Kodi Player, Kodi use this behavior:
-        # 1) try to select forced subtitle that matches audio language
-        # 2) when missing, try to select the first "regular" subtitle that matches audio language
-        # This Kodi behavior is totally non sense. If forced is selected you must not view the regular subtitles
-        # There is no other solution than to disable the subtitles manually.
-        audio_language = common.get_kodi_audio_language()
-        if not any(text_track.get('isForcedNarrative', False) is True and text_track['language'] == audio_language
-                   for text_track in manifest['timedtexttracks']):
-            xbmc.Player().showSubtitles(False)
-
+    is_forced = subtitle_language == 'forced_only'
+    if is_forced:
+        subtitle_language = common.get_kodi_audio_language()
+    for index, text_track in enumerate(manifest['timedtexttracks']):
+        if text_track['isNoneTrack']:
+            continue
+        if text_track.get('isForcedNarrative', False) != is_forced:
+            continue
+        if text_track['language'] != subtitle_language:
+            continue
+        return index
     # Leave the selection of forced subtitles to Kodi
     return -1
