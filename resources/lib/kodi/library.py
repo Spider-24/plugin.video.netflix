@@ -135,14 +135,17 @@ def sync_mylist_to_library():
     by deleting everything that was previously exported
     """
     common.info('Performing full sync of Netflix "My List" with the Kodi library')
-    purge()
+    #purge()
     nfo_settings = nfo.NFOSettings()
     nfo_settings.show_export_dialog()
     for videoid in api.mylist_items_switch_profiles():
+        print('Ben: videoid = {} - {}'.format(videoid, common.get_local_string(30018)))
         execute_library_tasks(videoid, [export_item],
                               common.get_local_string(30018),
                               sync_mylist=False,
                               nfo_settings=nfo_settings)
+
+        xbmc.sleep(1)
 
 
 @common.time_execution(immediate=False)

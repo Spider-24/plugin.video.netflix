@@ -183,6 +183,7 @@ def _build_root_node(root_name, tags):
             tag = ET.SubElement(tag, k)
             tag.text = unicode(v)
         elif v:
+            pass
             tag = ET.SubElement(root, k)
             tag.text = unicode(v)
     return root

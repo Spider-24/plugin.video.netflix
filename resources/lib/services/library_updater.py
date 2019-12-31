@@ -108,6 +108,8 @@ class LibraryUpdateService(xbmc.Monitor):
         # If a scan is already in progress, the scan is delayed until onScanFinished event
         common.debug('Library update requested for library updater service')
         if not self.scan_in_progress:
+            common.debug('Scan is not in progress...') #Ben
+            return
             self.scan_awaiting = False
             common.scan_library(
                 xbmc.makeLegalFilename(
