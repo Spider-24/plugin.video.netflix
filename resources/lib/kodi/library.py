@@ -23,6 +23,8 @@ from resources.lib.kodi.library_items import (export_item, remove_item, export_n
                                               ItemNotFound, FOLDER_MOVIES, FOLDER_TV, library_path)
 from resources.lib.kodi.library_tasks import compile_tasks
 
+import random #Ben's
+
 
 def update_kodi_library(library_operation):
     """Decorator that ensures an update of the Kodi library"""
@@ -144,8 +146,35 @@ def sync_mylist_to_library():
                               common.get_local_string(30018),
                               sync_mylist=False,
                               nfo_settings=nfo_settings)
+        break
+        xbmc.sleep(random.randint(1, 10)) #add randomness to avoid connection problems
+        
 
-        xbmc.sleep(1)
+    
+    refresh_library()
+
+def refresh_library(): #Ben's
+    filters = {'and': [
+                {'field': 'path', 'operator': 'contains',
+                 'value': 'plugin.video.netflix'}
+            ]}
+    
+    shows = common.get_library_items('tvshow', filters)
+    print(shows)
+    
+    for show in shows:
+        common.refresh_library_item('tvshow', show['tvshowid'])
+
+    filters = {'and': [
+                {'field': 'path', 'operator': 'contains',
+                 'value': 'plugin.video.netflix'}
+            ]}
+
+    episodes = common.get_library_items('episode', filters)
+    print(episodes)
+
+    for episode in episodes:
+        common.refresh_library_item('episode', episode['episodeid'])
 
 
 @common.time_execution(immediate=False)

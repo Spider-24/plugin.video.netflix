@@ -109,6 +109,7 @@ class LibraryUpdateService(xbmc.Monitor):
         common.debug('Library update requested for library updater service')
         if not self.scan_in_progress:
             common.debug('Scan is not in progress...') #Ben
+            common.debug(kodi_library.library_path())
             return
             self.scan_awaiting = False
             common.scan_library(

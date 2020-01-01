@@ -72,11 +72,23 @@ def update_library_item_details(dbtype, dbid, details):
 def get_library_items(dbtype, video_filter=None):
     """Return a list of all items in the Kodi library that are of type
     dbtype (either movie or episode)"""
+    print('get_library_items was called with the following params:')
+    print(dbtype)
     method = 'VideoLibrary.Get{}s'.format(dbtype.capitalize())
     params = {'properties': ['file']}
     if video_filter:
         params.update({'filter': video_filter})
     return json_rpc(method, params)[dbtype + 's']
+
+
+def refresh_library_item(dbtype, id): #Ben's
+    """Return a list of all items in the Kodi library that are of type
+    dbtype (either movie or episode)"""
+    print('refresh_library_item')
+    method = 'VideoLibrary.Refresh{}'.format(dbtype)
+    key = '{}id'.format(dbtype)
+    params = {key : id, "ignorenfo": True}
+    return json_rpc(method, params)
 
 
 def get_library_item_details(dbtype, itemid):
@@ -90,7 +102,7 @@ def get_library_item_details(dbtype, itemid):
 
 def scan_library(path=""):
     """Start a library scanning in a specified folder"""
-    method = 'VideoLibrary.Scan'
+    method = 'Videon'
     params = {'directory': path}
     return json_rpc(method, params)
 

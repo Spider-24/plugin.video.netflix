@@ -101,19 +101,19 @@ class NFOSettings(object):
 def create_episode_nfo(episode, season, show):
     """Build NFO file for episode"""
     tags = {
-        'title': episode.get('title'),
-        'showtitle': show.get('title'),
+        #'title': episode.get('title'),
+        #'showtitle': show.get('title'),
         #'season': season.get('seq'),
         #'episode': episode.get('seq'),
-        'plot': episode.get('synopsis'),
+        #'plot': episode.get('synopsis'),
         'durationinseconds': episode.get('runtime', 0),
         'runtime': episode.get('runtime', 0) / 60,
         #'year': season.get('year'),
-        'id': episode.get('id')
+        #'id': episode.get('id')
     }
 
     root = _build_root_node('episodedetails', tags)
-    _add_episode_thumb(root, episode)
+    #_add_episode_thumb(root, episode)
     return root
 
 
@@ -122,13 +122,13 @@ def create_show_nfo(show):
     tags = {
         'title': show['title'],
         'showtitle': show['title'],
-        'plot': show.get('synopsis'),
+        #'plot': show.get('synopsis'),
         'id': show['id'],
         'mpaa': show.get('rating')
     }
     root = _build_root_node('tvshow', tags)
-    _add_poster(root, show)
-    _add_fanart(root, show)
+    #_add_poster(root, show)
+    #_add_fanart(root, show)
     return root
 
 
