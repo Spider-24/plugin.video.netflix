@@ -24,6 +24,7 @@ from resources.lib.kodi.library_items import (export_item, remove_item, export_n
 from resources.lib.kodi.library_tasks import compile_tasks
 
 import random #Ben's
+import xbmcgui
 
 
 def update_kodi_library(library_operation):
@@ -146,7 +147,7 @@ def sync_mylist_to_library():
                               common.get_local_string(30018),
                               sync_mylist=False,
                               nfo_settings=nfo_settings)
-        break
+        
         xbmc.sleep(random.randint(1, 10)) #add randomness to avoid connection problems
         
 
@@ -154,27 +155,55 @@ def sync_mylist_to_library():
     refresh_library()
 
 def refresh_library(): #Ben's
+
+
+    pDialog = xbmcgui.DialogProgressBG()
+    pDialog.create('Netflix Library Scan')
+
     filters = {'and': [
                 {'field': 'path', 'operator': 'contains',
                  'value': 'plugin.video.netflix'}
             ]}
     
+    movies = common.get_library_items('movie', filters)
     shows = common.get_library_items('tvshow', filters)
     print(shows)
     
     for show in shows:
-        common.refresh_library_item('tvshow', show['tvshowid'])
+        pDialog.update(message='Scanning {}'.format(show['label']))
+        test = common.refresh_library_item('tvshow', show['tvshowid'])
+        print('Returned str for {} = {}'.format(show['label'], test))
+        #print('CVideoLibraryQueue::IsScanningLibrary() = {}'.format(xbmc.CVideoLibraryQueue.IsScanningLibrary()))
 
-    filters = {'and': [
-                {'field': 'path', 'operator': 'contains',
-                 'value': 'plugin.video.netflix'}
-            ]}
+        """filters = {'and': [
+                    {'field': 'path', 'operator': 'contains',
+                    'value': show['file']}
+                ]}
 
-    episodes = common.get_library_items('episode', filters)
-    print(episodes)
+        episodes = common.get_library_items('episode', filters)
+        print(episodes)
+        
 
-    for episode in episodes:
-        common.refresh_library_item('episode', episode['episodeid'])
+        xbmc.sleep(100) #gives Kodi time to get info about the show
+
+        for episode in episodes:
+            pDialog.update(message='Scanning "{}" - file: "{}"'.format(show['label'], episode['label']))
+            test = common.refresh_library_item('episode', episode['episodeid'])
+            print('Returned str = {}'.format(test))
+            xbmc.sleep(1) #gives Kodi time to get info about the show"""
+    
+
+    for movie in movies:
+        pDialog.update(message='Scanning {}'.format(movie['label']))
+        common.refresh_library_item('movie', movie['movieid'])
+        xbmc.sleep(100) #gives Kodi time to get info about the show
+
+
+    pDialog.close()
+
+    line1 = "Finished scanning Netflix library"
+
+    xbmcgui.Dialog().ok('Netflix', line1)
 
 
 @common.time_execution(immediate=False)

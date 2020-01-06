@@ -91,6 +91,7 @@ class LibraryUpdateService(xbmc.Monitor):
         # Kodi cancels the update if called with JSON RPC twice
         # so we monitor events to ensure we're not cancelling a previous scan
         if library == 'video':
+            print('Ben: Scanning...')
             self.scan_in_progress = True
 
     def onScanFinished(self, library):

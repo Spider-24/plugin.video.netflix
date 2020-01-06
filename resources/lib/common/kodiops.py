@@ -88,6 +88,8 @@ def refresh_library_item(dbtype, id): #Ben's
     method = 'VideoLibrary.Refresh{}'.format(dbtype)
     key = '{}id'.format(dbtype)
     params = {key : id, "ignorenfo": True}
+    if dbtype == 'tvshow':
+        params["refreshepisodes"] = True
     return json_rpc(method, params)
 
 
@@ -105,7 +107,6 @@ def scan_library(path=""):
     method = 'Videon'
     params = {'directory': path}
     return json_rpc(method, params)
-
 
 def refresh_container():
     """Refresh the current container"""
