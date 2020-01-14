@@ -1,14 +1,21 @@
 # -*- coding: utf-8 -*-
-"""Get the UUID of the device"""
+"""
+    Copyright (C) 2017 Sebastian Golasch (plugin.video.netflix)
+    Copyright (C) 2019 Stefano Gottardo - @CastagnaIT (original implementation module)
+    Get the UUID of the device
+
+    SPDX-License-Identifier: MIT
+    See LICENSES/MIT.md for more information.
+"""
 from __future__ import absolute_import, division, unicode_literals
 
 from .logging import debug
 from .misc_utils import get_system_platform
 
 try:  # Python 2
-    from __builtin__ import str as text
-except ImportError:  # Python 3
-    from builtins import str as text
+    unicode
+except NameError:  # Python 3
+    unicode = str  # pylint: disable=redefined-builtin
 
 __CRYPT_KEY__ = None
 
@@ -30,7 +37,7 @@ def get_random_uuid():
     :return: a string of a random uuid
     """
     import uuid
-    return text(uuid.uuid4())
+    return unicode(uuid.uuid4())
 
 
 def _get_system_uuid():
@@ -52,7 +59,7 @@ def _get_system_uuid():
     if not uuid_value:
         debug('It is not possible to get a system UUID creating a new UUID')
         uuid_value = _get_fake_uuid(system != 'android')
-    return uuid.uuid5(uuid.NAMESPACE_DNS, text(uuid_value)).bytes
+    return uuid.uuid5(uuid.NAMESPACE_DNS, str(uuid_value)).bytes
 
 
 def _get_windows_uuid():
@@ -63,7 +70,7 @@ def _get_windows_uuid():
         try:  # Python 2
             import _winreg as winreg
         except ImportError:  # Python 3
-            import winreg as winreg
+            import winreg
         registry = winreg.HKEY_LOCAL_MACHINE
         address = 'SOFTWARE\\Microsoft\\Cryptography'
         keyargs = winreg.KEY_READ | winreg.KEY_WOW64_64KEY
@@ -122,7 +129,7 @@ def _get_android_uuid():
                 values += value_splitted[1]
     except Exception:
         pass
-    return values
+    return values.encode('utf-8')
 
 
 def _get_macos_uuid():
@@ -140,9 +147,9 @@ def _get_macos_uuid():
     except Exception as exc:
         debug('Failed to fetch OSX/IOS system profile {}'.format(exc))
     if sp_dict_values:
-        if 'UUID' in sp_dict_values.keys():
+        if 'UUID' in list(sp_dict_values.keys()):
             return sp_dict_values['UUID']
-        if 'serialnumber' in sp_dict_values.keys():
+        if 'serialnumber' in list(sp_dict_values.keys()):
             return sp_dict_values['serialnumber']
     return None
 
@@ -159,12 +166,12 @@ def _parse_osx_xml_plist_data(data):
 
     items_dict = xml_data[0]['_items'][0]
     r = re.compile(r'.*UUID.*')  # Find to example "platform_UUID" key
-    uuid_keys = filter(r.match, items_dict.keys())
+    uuid_keys = list(filter(r.match, list(items_dict.keys())))
     if uuid_keys:
         dict_values['UUID'] = items_dict[uuid_keys[0]]
     if not uuid_keys:
         r = re.compile(r'.*serial.*number.*')  # Find to example "serial_number" key
-        serialnumber_keys = filter(r.match, items_dict.keys())
+        serialnumber_keys = list(filter(r.match, list(items_dict.keys())))
         if serialnumber_keys:
             dict_values['serialnumber'] = items_dict[serialnumber_keys[0]]
     return dict_values

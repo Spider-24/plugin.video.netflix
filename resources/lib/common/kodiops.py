@@ -1,5 +1,12 @@
 # -*- coding: utf-8 -*-
-"""Helper functions for Kodi operations"""
+"""
+    Copyright (C) 2017 Sebastian Golasch (plugin.video.netflix)
+    Copyright (C) 2018 Caphm (original implementation module)
+    Helper functions for Kodi operations
+
+    SPDX-License-Identifier: MIT
+    See LICENSES/MIT.md for more information.
+"""
 from __future__ import absolute_import, division, unicode_literals
 
 import json
@@ -9,6 +16,11 @@ import xbmc
 from resources.lib.globals import g
 
 from .logging import debug
+
+try:  # Python 2
+    unicode
+except NameError:  # Python 3
+    unicode = str  # pylint: disable=redefined-builtin
 
 LIBRARY_PROPS = {
     'episode': ['title', 'plot', 'writer', 'playcount', 'director', 'season',
@@ -37,7 +49,7 @@ def json_rpc(method, params=None):
                     'params': params or {}}
     request = json.dumps(request_data)
     debug('Executing JSON-RPC: {}'.format(request))
-    raw_response = unicode(xbmc.executeJSONRPC(request), 'utf-8')
+    raw_response = xbmc.executeJSONRPC(request)
     # debug('JSON-RPC response: {}'.format(raw_response))
     response = json.loads(raw_response)
     if 'error' in response:
@@ -60,11 +72,25 @@ def update_library_item_details(dbtype, dbid, details):
 def get_library_items(dbtype, video_filter=None):
     """Return a list of all items in the Kodi library that are of type
     dbtype (either movie or episode)"""
+    print('get_library_items was called with the following params:')
+    print(dbtype)
     method = 'VideoLibrary.Get{}s'.format(dbtype.capitalize())
     params = {'properties': ['file']}
     if video_filter:
         params.update({'filter': video_filter})
     return json_rpc(method, params)[dbtype + 's']
+
+
+def refresh_library_item(dbtype, id): #Ben's
+    """Return a list of all items in the Kodi library that are of type
+    dbtype (either movie or episode)"""
+    print('refresh_library_item')
+    method = 'VideoLibrary.Refresh{}'.format(dbtype)
+    key = '{}id'.format(dbtype)
+    params = {key : id, "ignorenfo": True}
+    if dbtype == 'tvshow':
+        params["refreshepisodes"] = True
+    return json_rpc(method, params)
 
 
 def get_library_item_details(dbtype, itemid):
@@ -78,10 +104,9 @@ def get_library_item_details(dbtype, itemid):
 
 def scan_library(path=""):
     """Start a library scanning in a specified folder"""
-    method = 'VideoLibrary.Scan'
+    method = 'Videon'
     params = {'directory': path}
     return json_rpc(method, params)
-
 
 def refresh_container():
     """Refresh the current container"""
@@ -117,7 +142,7 @@ def schedule_builtin(time, command, name='NetflixTask'):
 
 def play_media(media):
     """Play a media in Kodi"""
-    xbmc.executebuiltin('PlayMedia({})'.format(media))
+    xbmc.executebuiltin(g.py2_encode('PlayMedia({})'.format(media)))
 
 
 def stop_playback():
@@ -130,7 +155,7 @@ def get_kodi_audio_language():
     Return the audio language from Kodi settings
     """
     audio_language = json_rpc('Settings.GetSettingValue', {'setting': 'locale.audiolanguage'})
-    audio_language = xbmc.convertLanguage(audio_language['value'].encode('utf-8'), xbmc.ISO_639_1)
+    audio_language = xbmc.convertLanguage(g.py2_encode(audio_language['value']), xbmc.ISO_639_1)
     audio_language = audio_language if audio_language else xbmc.getLanguage(xbmc.ISO_639_1, False)
     return audio_language if audio_language else 'en'
 
@@ -142,8 +167,10 @@ def get_kodi_subtitle_language():
     subtitle_language = json_rpc('Settings.GetSettingValue', {'setting': 'locale.subtitlelanguage'})
     if subtitle_language['value'] == 'forced_only':
         return subtitle_language['value']
-    subtitle_language = xbmc.convertLanguage(subtitle_language['value'].encode('utf-8'), xbmc.ISO_639_1)
-    subtitle_language = subtitle_language if subtitle_language else xbmc.getLanguage(xbmc.ISO_639_1, False)
+    subtitle_language = xbmc.convertLanguage(g.py2_encode(subtitle_language['value']),
+                                             xbmc.ISO_639_1)
+    subtitle_language = subtitle_language if subtitle_language else xbmc.getLanguage(xbmc.ISO_639_1,
+                                                                                     False)
     subtitle_language = subtitle_language if subtitle_language else 'en'
     return subtitle_language
 
@@ -163,7 +190,8 @@ def fix_locale_languages(data_list):
             continue
         if len(item['language']) == 2:
             continue
-        item['language'] = _adjust_locale(item['language'], item['language'][0:2] in locale_list_nocountry)
+        item['language'] = _adjust_locale(item['language'],
+                                          item['language'][0:2] in locale_list_nocountry)
 
 
 def _adjust_locale(locale_code, lang_code_without_country_exists):
@@ -189,3 +217,35 @@ def _adjust_locale(locale_code, lang_code_without_country_exists):
 
     debug('AdjustLocale - missing mapping conversion for locale: {}'.format(locale_code))
     return locale_code
+
+
+def is_internet_connected():
+    """
+    Check internet status
+    :return: True if connected
+    """
+    if not xbmc.getCondVisibility('System.InternetState'):
+        # Double check when Kodi say that it is not connected
+        # i'm not sure the InfoLabel will work properly when Kodi was started a few seconds ago
+        # using getInfoLabel instead of getCondVisibility often return delayed results..
+        return _check_internet()
+    return True
+
+
+def _check_internet():
+    """
+    Checks via socket if the internet works (in about 0,7sec with no timeout error)
+    :return: True if connected
+    """
+    import socket
+    for timeout in [1, 1]:
+        try:
+            socket.setdefaulttimeout(timeout)
+            host = socket.gethostbyname("www.google.com")
+            s = socket.create_connection((host, 80), timeout)
+            s.close()
+            return True
+        except Exception:  # pylint: disable=broad-except
+            # Error when is not reachable
+            pass
+    return False

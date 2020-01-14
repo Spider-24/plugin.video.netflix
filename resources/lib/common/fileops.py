@@ -1,5 +1,12 @@
 # -*- coding: utf-8 -*-
-"""Helper functions for file operations"""
+"""
+    Copyright (C) 2017 Sebastian Golasch (plugin.video.netflix)
+    Copyright (C) 2018 Caphm (original implementation module)
+    Helper functions for file operations
+
+    SPDX-License-Identifier: MIT
+    See LICENSES/MIT.md for more information.
+"""
 from __future__ import absolute_import, division, unicode_literals
 
 import os
@@ -46,7 +53,7 @@ def copy_file(from_path, to_path):
         pass
 
 
-def save_file(filename, content, mode='w'):
+def save_file(filename, content, mode='wb'):
     """
     Saves the given content under given filename
     :param filename: The filename
@@ -55,12 +62,12 @@ def save_file(filename, content, mode='w'):
     file_handle = xbmcvfs.File(
         xbmc.translatePath(os.path.join(g.DATA_PATH, filename)), mode)
     try:
-        file_handle.write(content.encode('utf-8'))
+        file_handle.write(bytearray(content))
     finally:
         file_handle.close()
 
 
-def load_file(filename, mode='r'):
+def load_file(filename, mode='rb'):
     """
     Loads the content of a given filename
     :param filename: The file to load
@@ -69,7 +76,7 @@ def load_file(filename, mode='r'):
     file_handle = xbmcvfs.File(
         xbmc.translatePath(os.path.join(g.DATA_PATH, filename)), mode)
     try:
-        return file_handle.read().decode('utf-8')
+        return file_handle.readBytes().decode('utf-8')
     finally:
         file_handle.close()
 
@@ -90,10 +97,22 @@ def list_dir(data_path=g.DATA_PATH):
     return xbmcvfs.listdir(xbmc.translatePath(data_path))
 
 
-def delete_folder_contents(path):
-    """Delete all files in a folder"""
-    for filename in list_dir(path)[1]:
-        xbmcvfs.delete(filename)
+def delete_folder_contents(path, delete_subfolders=False):
+    """
+    Delete all files in a folder
+    :param path: Path to perform delete contents
+    :param delete_subfolders: If True delete also all subfolders
+    """
+    directories, files = list_dir(path)
+    for filename in files:
+        xbmcvfs.delete(os.path.join(path, filename))
+    if not delete_subfolders:
+        return
+    for directory in directories:
+        delete_folder_contents(os.path.join(path, directory), True)
+        # Give time because the system performs previous op. otherwise it can't delete the folder
+        xbmc.sleep(80)
+        xbmcvfs.rmdir(os.path.join(path, directory))
 
 
 def delete_ndb_files(data_path=g.DATA_PATH):
