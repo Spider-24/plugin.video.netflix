@@ -1,12 +1,30 @@
 # -*- coding: utf-8 -*-
-"""Helper functions for setting infolabels of list items"""
+"""
+    Copyright (C) 2017 Sebastian Golasch (plugin.video.netflix)
+    Copyright (C) 2018 Caphm (original implementation module)
+    Helper functions for setting infolabels of list items
+
+    SPDX-License-Identifier: MIT
+    See LICENSES/MIT.md for more information.
+"""
 from __future__ import absolute_import, division, unicode_literals
 
-from resources.lib.globals import g
-import resources.lib.common as common
-import resources.lib.cache as cache
+import copy
+import re
+
+from future.utils import iteritems, itervalues
+
 import resources.lib.api.paths as paths
+import resources.lib.api.shakti as api
+import resources.lib.cache as cache
+import resources.lib.common as common
 import resources.lib.kodi.library as library
+from resources.lib.globals import g
+
+try:  # Python 2
+    unicode
+except NameError:  # Python 3
+    unicode = str  # pylint: disable=redefined-builtin
 
 QUALITIES = [
     {'codec': 'h264', 'width': '960', 'height': '540'},
@@ -20,28 +38,37 @@ JSONRPC_MAPPINGS = {
 }
 
 
-def add_info(videoid, list_item, item, raw_data):
+def add_info(videoid, list_item, item, raw_data, set_info=False):
     """Add infolabels to the list_item. The passed in list_item is modified
     in place and the infolabels are returned."""
     # pylint: disable=too-many-locals
+    cache_identifier = unicode(videoid) + '_' + g.LOCAL_DB.get_profile_config('language', '')
     try:
-        cache_entry = g.CACHE.get(cache.CACHE_INFOLABELS, videoid)
+        cache_entry = g.CACHE.get(cache.CACHE_INFOLABELS, cache_identifier)
         infos = cache_entry['infos']
         quality_infos = cache_entry['quality_infos']
     except cache.CacheMiss:
         infos, quality_infos = parse_info(videoid, item, raw_data)
-        g.CACHE.add(cache.CACHE_INFOLABELS, videoid,
+        g.CACHE.add(cache.CACHE_INFOLABELS, cache_identifier,
                     {'infos': infos, 'quality_infos': quality_infos},
                     ttl=g.CACHE_METADATA_TTL, to_disk=True)
-    list_item.setInfo('video', infos)
+    # Use a deepcopy of dict to not reflect future changes to the dictionary also to the cache
+    infos_copy = copy.deepcopy(infos)
     if videoid.mediatype == common.VideoId.EPISODE or \
        videoid.mediatype == common.VideoId.MOVIE or \
        videoid.mediatype == common.VideoId.SUPPLEMENTAL:
         list_item.setProperty('isFolder', 'false')
         list_item.setProperty('IsPlayable', 'true')
-    for stream_type, quality_infos in quality_infos.iteritems():
+    else:
+        list_item.setProperty('isFolder', 'true')
+    for stream_type, quality_infos in iteritems(quality_infos):
         list_item.addStreamInfo(stream_type, quality_infos)
-    return infos
+    if item.get('dpSupplementalMessage'):
+        # Short information about future release of tv show season or other
+        infos_copy['plot'] += ' [COLOR green]{}[/COLOR]'.format(item['dpSupplementalMessage'])
+    if set_info:
+        list_item.setInfo('video', infos_copy)
+    return infos_copy
 
 
 def add_art(videoid, list_item, item, raw_data=None):
@@ -61,8 +88,8 @@ def add_info_for_playback(videoid, list_item):
     """Retrieve infolabels and art info and add them to the list_item"""
     try:
         return add_info_from_library(videoid, list_item)
-    except library.ItemNotFound as exc:
-        common.debug(exc)
+    except library.ItemNotFound:
+        common.debug('Can not get infolabels from the library, submit a request to netflix')
         return add_info_from_netflix(videoid, list_item)
 
 
@@ -99,8 +126,7 @@ def parse_atomic_infos(item):
     """Parse those infos into infolabels that are directly accesible from
     the item dict"""
     return {target: _get_and_transform(source, target, item)
-            for target, source
-            in paths.INFO_MAPPINGS.iteritems()}
+            for target, source in iteritems(paths.INFO_MAPPINGS)}
 
 
 def _get_and_transform(source, target, item):
@@ -119,14 +145,14 @@ def parse_referenced_infos(item, raw_data):
     return {target: [person['name']
                      for _, person
                      in paths.resolve_refs(item.get(source, {}), raw_data)]
-            for target, source in paths.REFERENCE_MAPPINGS.iteritems()}
+            for target, source in iteritems(paths.REFERENCE_MAPPINGS)}
 
 
 def parse_tags(item):
     """Parse the tags"""
     return {'tag': [tagdef['name']
                     for tagdef
-                    in item.get('tags', {}).itervalues()
+                    in itervalues(item.get('tags', {}))
                     if isinstance(tagdef.get('name', {}), unicode)]}
 
 
@@ -162,28 +188,28 @@ def parse_art(videoid, item, raw_data):  # pylint: disable=unused-argument
     fanart = common.get_path_safe(
         paths.ART_PARTIAL_PATHS[4] + [0, 'url'], item)
     return assign_art(videoid,
-                      boxarts[paths.ART_SIZE_FHD],
-                      boxarts[paths.ART_SIZE_SD],
-                      boxarts[paths.ART_SIZE_POSTER],
-                      interesting_moment,
-                      clearlogo,
-                      fanart)
+                      boxart_large=boxarts[paths.ART_SIZE_FHD],
+                      boxart_small=boxarts[paths.ART_SIZE_SD],
+                      poster=boxarts[paths.ART_SIZE_POSTER],
+                      interesting_moment=interesting_moment,
+                      clearlogo=clearlogo,
+                      fanart=fanart)
 
 
-def assign_art(videoid, boxart_large, boxart_small, poster, interesting_moment,
-               clearlogo, fanart):
+def assign_art(videoid, **kwargs):
     """Assign the art available from Netflix to appropriate Kodi art"""
-    # pylint: disable=too-many-arguments
-    art = {'poster': _best_art([poster]),
-           'fanart': _best_art([fanart, interesting_moment, boxart_large,
-                                boxart_small]),
-           'thumb': ((interesting_moment
+    art = {'poster': _best_art([kwargs['poster']]),
+           'fanart': _best_art([kwargs['fanart'],
+                                kwargs['interesting_moment'],
+                                kwargs['boxart_large'],
+                                kwargs['boxart_small']]),
+           'thumb': ((kwargs['interesting_moment']
                       if videoid.mediatype == common.VideoId.EPISODE or
                       videoid.mediatype == common.VideoId.SUPPLEMENTAL else '')
-                     or boxart_large or boxart_small)}
+                     or kwargs['boxart_large'] or kwargs['boxart_small'])}
     art['landscape'] = art['thumb']
     if videoid.mediatype != common.VideoId.UNSPECIFIED:
-        art['clearlogo'] = _best_art([clearlogo])
+        art['clearlogo'] = _best_art([kwargs['clearlogo']])
     return art
 
 
@@ -196,15 +222,13 @@ def _best_art(arts):
 def add_info_from_netflix(videoid, list_item):
     """Apply infolabels with info from Netflix API"""
     try:
-        infos = add_info(videoid, list_item, None, None)
+        infos = add_info(videoid, list_item, None, None, True)
         art = add_art(videoid, list_item, None)
         common.debug('Got infolabels and art from cache')
     except (AttributeError, TypeError):
-        common.info('Infolabels or art were not in cache, retrieving from API')
-        import resources.lib.api.shakti as api
+        common.debug('Infolabels or art were not in cache, retrieving from API')
         api_data = api.single_info(videoid)
-        infos = add_info(videoid, list_item, api_data['videos'][videoid.value],
-                         api_data)
+        infos = add_info(videoid, list_item, api_data['videos'][videoid.value], api_data, True)
         art = add_art(videoid, list_item, api_data['videos'][videoid.value])
     return infos, art
 
@@ -212,7 +236,7 @@ def add_info_from_netflix(videoid, list_item):
 def add_info_from_library(videoid, list_item):
     """Apply infolabels with info from Kodi library"""
     details = library.get_item(videoid)
-    common.debug('Got fileinfo from library: {}'.format(details))
+    common.debug('Got file info from library: {}'.format(details))
     art = details.pop('art', {})
     # Resuming for strm files in library is currently broken in all kodi versions
     # keeping this for reference / in hopes this will get fixed
@@ -224,7 +248,8 @@ def add_info_from_library(videoid, list_item):
         'DBID': details.pop('{}id'.format(videoid.mediatype)),
         'mediatype': videoid.mediatype
     }
-    # WARNING!! Remove unsupported ListItem.setInfo keys from 'details' reference ListItem.cpp, using _sanitize_infos
+    # WARNING!! Remove unsupported ListItem.setInfo keys from 'details' by using _sanitize_infos
+    # reference to Kodi ListItem.cpp
     _sanitize_infos(details)
     infos.update(details)
     list_item.setInfo('video', infos)
@@ -235,8 +260,37 @@ def add_info_from_library(videoid, list_item):
 
 
 def _sanitize_infos(details):
-    for source, target in JSONRPC_MAPPINGS.items():
+    for source, target in iteritems(JSONRPC_MAPPINGS):
         if source in details:
             details[target] = details.pop(source)
     for prop in ['file', 'label', 'runtime']:
         details.pop(prop, None)
+
+
+def add_highlighted_title(list_item, videoid, infos):
+    """Highlight menu item title when the videoid is contained in my-list"""
+    highlight_index = g.ADDON.getSettingInt('highlight_mylist_titles')
+    if not highlight_index:
+        return
+    highlight_color = ['black', 'blue', 'red', 'green', 'white', 'yellow'][highlight_index]
+    remove_color = videoid not in api.mylist_items()
+    if list_item.getProperty('isFolder') == 'true':
+        updated_title = _colorize_title(g.py2_decode(list_item.getVideoInfoTag().getTitle()),
+                                        highlight_color,
+                                        remove_color)
+        list_item.setLabel(updated_title)
+        infos['title'] = updated_title
+    else:
+        # When menu item is not a folder 'label' is replaced by 'title' property of infoLabel
+        infos['title'] = _colorize_title(infos['title'], highlight_color, remove_color)
+
+
+def _colorize_title(text, color, remove_color=False):
+    matches = re.match(r'(\[COLOR\s.+\])(.*)(\[/COLOR\])', text)
+    if remove_color:
+        if matches:
+            return matches.groups()[1]
+    else:
+        if not matches:
+            return '[COLOR {}]{}[/COLOR]'.format(color, text)
+    return text

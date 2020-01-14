@@ -1,5 +1,12 @@
 # -*- coding: utf-8 -*-
-"""MSL video profiles"""
+"""
+    Copyright (C) 2017 Sebastian Golasch (plugin.video.netflix)
+    Copyright (C) 2018 Caphm (original implementation module)
+    MSL video profiles
+
+    SPDX-License-Identifier: MIT
+    See LICENSES/MIT.md for more information.
+"""
 from __future__ import absolute_import, division, unicode_literals
 
 import xbmcaddon
@@ -89,9 +96,11 @@ def _subtitle_profiles():
     isversion = xbmcaddon.Addon('inputstream.adaptive').getAddonInfo('version')
     subtitle_profile = ['simplesdh', 'webvtt-lssdh-ios8']
     if g.ADDON.getSettingBool('disable_webvtt_subtitle') \
-        or not common.is_minimum_version(isversion, '2.3.8'):
+       or not common.is_minimum_version(isversion, '2.3.8'):
         subtitle_profile = ['simplesdh']
     return subtitle_profile
+
+
 
 
 def _additional_profiles(profiles, req_settings=None, forb_settings=None):

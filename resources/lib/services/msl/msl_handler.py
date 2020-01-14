@@ -1,9 +1,12 @@
 # -*- coding: utf-8 -*-
-# Author: trummerjo
-# Module: MSLHttpRequestHandler
-# Created on: 26.01.2017
-# License: MIT https://goo.gl/5bMj3H
-"""Proxy service to convert manifest and provide license data"""
+"""
+    Copyright (C) 2017 Sebastian Golasch (plugin.video.netflix)
+    Copyright (C) 2017 Trummerjo (original implementation module)
+    Proxy service to convert manifest and provide license data
+
+    SPDX-License-Identifier: MIT
+    See LICENSES/MIT.md for more information.
+"""
 from __future__ import absolute_import, division, unicode_literals
 
 import re
@@ -30,6 +33,7 @@ try:  # Python 2
 except NameError:  # Python 3
     unicode = str  # pylint: disable=redefined-builtin
 
+
 CHROME_BASE_URL = 'https://www.netflix.com/nq/msl_v1/cadmium/'
 ENDPOINTS = {
     'manifest': CHROME_BASE_URL + 'pbo_manifests/%5E1.0.0/router',  # "pbo_manifests/^1.0.0/router"
@@ -46,8 +50,8 @@ def display_error_info(func):
         try:
             return func(*args, **kwargs)
         except Exception as exc:
-            ui.show_error_info(common.get_local_string(30028), unicode(exc.message),
-                               unknown_error=not exc.message,
+            ui.show_error_info(common.get_local_string(30028), unicode(exc),
+                               unknown_error=not(unicode(exc)),
                                netflix_error=isinstance(exc, MSLError))
             raise
     return error_catching_wrapper
@@ -66,7 +70,7 @@ class MSLHandler(object):
         self.request_builder = None
         try:
             msl_data = json.loads(common.load_file('msl_data.json'))
-            common.debug('Loaded MSL data from disk')
+            common.info('Loaded MSL data from disk')
         except Exception:
             msl_data = None
         try:
@@ -76,7 +80,7 @@ class MSLHandler(object):
                 self.check_mastertoken_validity()
         except Exception:
             import traceback
-            common.debug(traceback.format_exc())
+            common.error(traceback.format_exc())
         common.register_slot(
             signal=common.Signals.ESN_CHANGED,
             callback=self.perform_key_handshake)
@@ -112,7 +116,7 @@ class MSLHandler(object):
             common.info('Cannot perform key handshake, missing ESN')
             return False
 
-        common.debug('Performing key handshake. ESN: {}'.format(esn))
+        common.debug('Performing key handshake. ESN: {}', esn)
 
         response = _process_json_response(
             self._post(ENDPOINTS['manifest'],
@@ -164,19 +168,16 @@ class MSLHandler(object):
         try:
             # The manifest must be requested once and maintained for its entire duration
             manifest = g.CACHE.get(cache.CACHE_MANIFESTS, cache_identifier, False)
-            common.debug('Manifest for {} with ESN {} obtained from the cache'
-                         .format(viewable_id, esn))
+            common.debug('Manifest for {} with ESN {} obtained from the cache', viewable_id, esn)
             # Save the manifest to disk as reference
-            common.save_file('manifest.json', json.dumps(manifest))
+            common.save_file('manifest.json', json.dumps(manifest).encode('utf-8'))
             return manifest
         except cache.CacheMiss:
             pass
-        common.debug('Requesting manifest for {} with ESN {}'
-                     .format(viewable_id, esn))
+        common.debug('Requesting manifest for {} with ESN {}', viewable_id, esn)
         profiles = enabled_profiles()
         import pprint
-        common.debug('Requested profiles:\n{}'
-                     .format(pprint.pformat(profiles, indent=2)))
+        common.info('Requested profiles:\n{}', pprint.pformat(profiles, indent=2))
 
         ia_addon = xbmcaddon.Addon('inputstream.adaptive')
         hdcp = ia_addon is not None and ia_addon.getSetting('HDCPOVERRIDE') == 'true'
@@ -207,7 +208,9 @@ class MSLHandler(object):
                 'drmVersion': 25,
                 'usePsshBox': True,
                 'isBranching': False,
-                'useHttpsStreams': False,
+                'isNonMember': False,
+                'isUIAutoPlay': False,
+                'useHttpsStreams': True,
                 'imageSubtitleHeight': 1080,
                 'uiVersion': 'shakti-v93016808',
                 'uiPlatform': 'SHAKTI',
@@ -228,16 +231,19 @@ class MSLHandler(object):
                     'supportedHdcpVersions': hdcp_version,
                     'isHdcpEngaged': hdcp
                 }],
-                'preferAssistiveAudio': False,
-                'isNonMember': False
+                'preferAssistiveAudio': False
             },
             'echo': ''
         }
 
+        # Get and check mastertoken validity
+        mt_validity = self.check_mastertoken_validity()
         manifest = self._chunked_request(ENDPOINTS['manifest'],
-                                         manifest_request_data, esn)
+                                         manifest_request_data,
+                                         esn,
+                                         mt_validity)
         # Save the manifest to disk as reference
-        common.save_file('manifest.json', json.dumps(manifest))
+        common.save_file('manifest.json', json.dumps(manifest).encode('utf-8'))
         # Save the manifest to the cache to retrieve it during its validity
         expiration = int(manifest['expiration'] / 1000)
         g.CACHE.add(cache.CACHE_MANIFESTS, cache_identifier, manifest, eol=expiration)
@@ -282,24 +288,21 @@ class MSLHandler(object):
         return convert_to_dash(manifest)
 
     @common.time_execution(immediate=True)
-    def _chunked_request(self, endpoint, request_data, esn):
+    def _chunked_request(self, endpoint, request_data, esn, mt_validity=None):
         """Do a POST request and process the chunked response"""
-        # Get and check mastertoken validity
-        mt_validity = self.check_mastertoken_validity()
         chunked_response = self._process_chunked_response(
             self._post(endpoint, self.request_builder.msl_request(request_data, esn)),
-            mt_validity['renewable'])
+            mt_validity['renewable'] if mt_validity else None)
         return chunked_response['result']
 
     @common.time_execution(immediate=True)
     def _post(self, endpoint, request_data):
         """Execute a post request"""
-        common.debug('Executing POST request to {}'.format(endpoint))
+        common.debug('Executing POST request to {}', endpoint)
         start = time.clock()
         response = self.session.post(endpoint, request_data)
-        common.debug('Request took {}s'.format(time.clock() - start))
-        common.debug('Request returned response with status {}'
-                     .format(response.status_code))
+        common.debug('Request took {}s', time.clock() - start)
+        common.debug('Request returned response with status {}', response.status_code)
         response.raise_for_status()
         return response
 
@@ -335,7 +338,15 @@ def _process_json_response(response):
 
 
 def _raise_if_error(decoded_response):
+    raise_error = False
+    # Catch a manifest/chunk error
     if any(key in decoded_response for key in ['error', 'errordata']):
+        raise_error = True
+    # Catch a license error
+    if 'result' in decoded_response and isinstance(decoded_response.get('result'), list):
+        if 'error' in decoded_response['result'][0]:
+            raise_error = True
+    if raise_error:
         common.error('Full MSL error information:')
         common.error(json.dumps(decoded_response))
         raise MSLError(_get_error_details(decoded_response))
@@ -343,13 +354,20 @@ def _raise_if_error(decoded_response):
 
 
 def _get_error_details(decoded_response):
+    # Catch a chunk error
     if 'errordata' in decoded_response:
         return json.loads(
             base64.standard_b64decode(
                 decoded_response['errordata']))['errormsg']
+    # Catch a manifest error
     if 'error' in decoded_response:
         if decoded_response['error'].get('errorDisplayMessage'):
             return decoded_response['error']['errorDisplayMessage']
+    # Catch a license error
+    if 'result' in decoded_response and isinstance(decoded_response.get('result'), list):
+        if 'error' in decoded_response['result'][0]:
+            if decoded_response['result'][0]['error'].get('errorDisplayMessage'):
+                return decoded_response['result'][0]['error']['errorDisplayMessage']
     return 'Unhandled error check log.'
 
 
@@ -381,14 +399,11 @@ def _decrypt_chunks(chunks, crypto):
         # uncompress data if compressed
         if plaintext.get('compressionalgo') == 'GZIP':
             decoded_data = base64.standard_b64decode(data)
-            data = zlib.decompress(decoded_data, 16 + zlib.MAX_WBITS)
+            data = zlib.decompress(decoded_data, 16 + zlib.MAX_WBITS).decode('utf-8')
         else:
-            data = base64.standard_b64decode(data)
+            data = base64.standard_b64decode(data).decode('utf-8')
 
-        if isinstance(data, str):
-            decrypted_payload += unicode(data, 'utf-8')
-        else:
-            decrypted_payload += data
+        decrypted_payload += data
 
     return json.loads(decrypted_payload)
 

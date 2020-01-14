@@ -1,5 +1,12 @@
 # -*- coding: utf-8 -*-
-"""Common base for all playback action managers"""
+"""
+    Copyright (C) 2017 Sebastian Golasch (plugin.video.netflix)
+    Copyright (C) 2018 Caphm (original implementation module)
+    Common base for all playback action managers
+
+    SPDX-License-Identifier: MIT
+    See LICENSES/MIT.md for more information.
+"""
 from __future__ import absolute_import, division, unicode_literals
 
 from resources.lib.globals import g
@@ -41,7 +48,7 @@ class PlaybackActionManager(object):
         Initialize the manager with data when the addon initiates a playback.
         """
         self._call_if_enabled(self._initialize, data=data)
-        common.debug('Initialiized {}: {}'.format(self.name, self))
+        common.debug('Initialized {}: {}', self.name, self)
 
     def on_playback_started(self, player_state):
         """

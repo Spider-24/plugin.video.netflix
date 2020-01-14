@@ -1,5 +1,12 @@
 # -*- coding: utf-8 -*-
-"""Playback tracking and coordination of several actions during playback"""
+"""
+    Copyright (C) 2017 Sebastian Golasch (plugin.video.netflix)
+    Copyright (C) 2018 Caphm (original implementation module)
+    Playback tracking and coordination of several actions during playback
+
+    SPDX-License-Identifier: MIT
+    See LICENSES/MIT.md for more information.
+"""
 from __future__ import absolute_import, division, unicode_literals
 
 import json
@@ -58,8 +65,7 @@ class PlaybackController(xbmc.Monitor):
             return
         try:
             if method == 'Player.OnAVStart':
-                self._on_playback_started(
-                    json.loads(unicode(data, 'utf-8', errors='ignore')))
+                self._on_playback_started(json.loads(data))
             elif method == 'Player.OnStop':
                 self._on_playback_stopped()
         except Exception:
@@ -77,7 +83,10 @@ class PlaybackController(xbmc.Monitor):
                                  player_state)
 
     def _on_playback_started(self, data):
-        self.active_player_id = max(data['player']['playerid'], 1)
+        # When UpNext addon play a video while we are inside Netflix addon and
+        # not externally like Kodi library, the playerid become -1 this id does not exist
+        player_id = data['player']['playerid'] if data['player']['playerid'] > -1 else 1
+        self.active_player_id = player_id
         self._notify_all(PlaybackActionManager.on_playback_started,
                          self._get_player_state())
 
@@ -89,8 +98,8 @@ class PlaybackController(xbmc.Monitor):
 
     def _notify_all(self, notification, data=None):
         # pylint: disable=broad-except
-        common.debug('Notifying all managers of {} (data={})'
-                     .format(notification.__name__, data))
+        common.debug('Notifying all managers of {} (data={})',
+                     notification.__name__, data)
         for manager in self.action_managers:
             _notify_managers(manager, notification, data)
 
@@ -110,6 +119,12 @@ class PlaybackController(xbmc.Monitor):
         except IOError:
             return {}
 
+        # Sometime may happen that when you stop playback, a player status without data is read,
+        # so all dict values are returned with a default empty value,
+        # then return an empty status instead of fake data
+        if not player_state['audiostreams']:
+            return {}
+
         # convert time dict to elapsed seconds
         player_state['elapsed_seconds'] = (
             player_state['time']['hours'] * 3600 +
@@ -127,7 +142,6 @@ def _notify_managers(manager, notification, data):
         else:
             notify_method()
     except Exception as exc:
-        common.error('{} disabled due to exception: {}'
-                     .format(manager.name, exc))
+        common.error('{} disabled due to exception: {}', manager.name, exc)
         manager.enabled = False
         raise

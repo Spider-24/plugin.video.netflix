@@ -1,6 +1,12 @@
 # -*- coding: utf-8 -*-
+"""
+    Copyright (C) 2017 Sebastian Golasch (plugin.video.netflix)
+    Copyright (C) 2018 Caphm (original implementation module)
+    Relay playback info to UP NEXT add-on
 
-"""Relay playback info to UP NEXT addon"""
+    SPDX-License-Identifier: MIT
+    See LICENSES/MIT.md for more information.
+"""
 from __future__ import absolute_import, division, unicode_literals
 
 import resources.lib.common as common
@@ -13,7 +19,7 @@ class UpNextNotifier(PlaybackActionManager):
     Triggers the AddonSignal for Up Next addon integration.
     Needed because the signal must be sent after playback started.
     """
-    def __init__(self):
+    def __init__(self):  # pylint: disable=super-on-old-class
         super(UpNextNotifier, self).__init__()
         self.upnext_info = None
 
@@ -22,7 +28,7 @@ class UpNextNotifier(PlaybackActionManager):
 
     def _initialize(self, data):
         self.upnext_info = data['upnext_info']
-        self.enabled = True if self.upnext_info else False
+        self.enabled = bool(self.upnext_info)
 
     def _on_playback_started(self, player_state):
         # pylint: disable=unused-argument

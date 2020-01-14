@@ -1,10 +1,18 @@
 # -*- coding: utf-8 -*-
-"""Helper functions to build plugin listings for Kodi"""
+"""
+    Copyright (C) 2017 Sebastian Golasch (plugin.video.netflix)
+    Copyright (C) 2018 Caphm (original implementation module)
+    Helper functions to build plugin listings for Kodi
+
+    SPDX-License-Identifier: MIT
+    See LICENSES/MIT.md for more information.
+"""
 from __future__ import absolute_import, division, unicode_literals
 
-from functools import wraps
-
 import os
+from functools import wraps
+from future.utils import iteritems
+
 import xbmc
 import xbmcgui
 import xbmcplugin
@@ -13,8 +21,13 @@ from resources.lib.database.db_utils import (TABLE_MENU_DATA)
 from resources.lib.globals import g
 import resources.lib.common as common
 
-from .infolabels import add_info, add_art
-from .context_menu import generate_context_menu_items
+from .infolabels import add_info, add_art, add_highlighted_title
+from .context_menu import generate_context_menu_items, generate_context_menu_mainmenu
+
+try:  # Python 2
+    unicode
+except NameError:  # Python 3
+    unicode = str  # pylint: disable=redefined-builtin
 
 
 def custom_viewmode(partial_setting_id):
@@ -72,10 +85,18 @@ def _create_profile_item(profile_guid, is_active, html_parser):
     a profile as listed in the profiles listing"""
     profile_name = g.LOCAL_DB.get_profile_config('profileName', '', guid=profile_guid)
     unescaped_profile_name = html_parser.unescape(profile_name)
+    is_account_owner = g.LOCAL_DB.get_profile_config('isAccountOwner', False, guid=profile_guid)
+    is_kids = g.LOCAL_DB.get_profile_config('isKids', False, guid=profile_guid)
+    description = []
+    if is_account_owner:
+        description.append(common.get_local_string(30221))
+    if is_kids:
+        description.append(common.get_local_string(30222))
     enc_profile_name = profile_name.encode('utf-8')
     list_item = list_item_skeleton(
         label=unescaped_profile_name,
-        icon=g.LOCAL_DB.get_profile_config('avatar', '', guid=profile_guid))
+        icon=g.LOCAL_DB.get_profile_config('avatar', '', guid=profile_guid),
+        description=', '.join(description))
     list_item.select(is_active)
     autologin_url = common.build_url(
         pathitems=['save_autologin', profile_guid],
@@ -98,17 +119,17 @@ def build_main_menu_listing(lolomo):
     """
     directory_items = []
 
-    for menu_id, data in g.MAIN_MENU_ITEMS.iteritems():
+    for menu_id, data in iteritems(g.MAIN_MENU_ITEMS):
         show_in_menu = g.ADDON.getSettingBool('_'.join(('show_menu', menu_id)))
         if show_in_menu:
             menu_title = 'Missing menu title'
             if data['lolomo_known']:
                 for list_id, user_list in lolomo.lists_by_context(data['lolomo_contexts'],
                                                                   break_on_first=True):
-                    directory_items.append(_create_videolist_item(list_id,
-                                                                  user_list,
-                                                                  data,
-                                                                  static_lists=True))
+                    videolist_item = _create_videolist_item(list_id, user_list, data,
+                                                            static_lists=True)
+                    videolist_item[1].addContextMenuItems(generate_context_menu_mainmenu(menu_id))
+                    directory_items.append(videolist_item)
                     menu_title = user_list['displayName']
             else:
                 if data['label_id']:
@@ -133,7 +154,7 @@ def build_lolomo_listing(lolomo, menu_data, force_videolistbyid=False, exclude_l
     contexts = menu_data['lolomo_contexts']
     lists = (lolomo.lists_by_context(contexts)
              if contexts
-             else lolomo.lists.iteritems())
+             else iter(list(lolomo.lists.items())))
     directory_items = []
     for video_list_id, video_list in lists:
         menu_parameters = common.MenuIdParameters(id_values=video_list_id)
@@ -150,7 +171,7 @@ def build_lolomo_listing(lolomo, menu_data, force_videolistbyid=False, exclude_l
             sub_menu_data['path'] = [menu_data['path'][0], sel_video_list_id, sel_video_list_id]
             sub_menu_data['lolomo_known'] = False
             sub_menu_data['lolomo_contexts'] = None
-            sub_menu_data['content_type'] = g.CONTENT_SHOW
+            sub_menu_data['content_type'] = menu_data.get('content_type', g.CONTENT_SHOW)
             sub_menu_data['force_videolistbyid'] = force_videolistbyid
             sub_menu_data['main_menu'] = menu_data['main_menu']\
                 if menu_data.get('main_menu') else menu_data.copy()
@@ -161,7 +182,7 @@ def build_lolomo_listing(lolomo, menu_data, force_videolistbyid=False, exclude_l
                                                           sub_menu_data))
     parent_menu_data = g.LOCAL_DB.get_value(menu_data['path'][1],
                                             table=TABLE_MENU_DATA, data_type=dict)
-    finalize_directory(directory_items, menu_data.get('content_type', g.CONTENT_SHOW),
+    finalize_directory(directory_items, g.CONTENT_FOLDER,
                        title=parent_menu_data['title'],
                        sort_type='sort_label')
     return menu_data.get('view')
@@ -182,7 +203,10 @@ def _create_videolist_item(video_list_id, video_list, menu_data, static_lists=Fa
             path = 'video_list_sorted'
         pathitems = [path, menu_data['path'][1], video_list_id]
     list_item = list_item_skeleton(video_list['displayName'])
-    add_info(video_list.id, list_item, video_list, video_list.data)
+    infos = add_info(video_list.id, list_item, video_list, video_list.data)
+    if not static_lists:
+        add_highlighted_title(list_item, video_list.id, infos)
+    list_item.setInfo('video', infos)
     if video_list.artitem:
         add_art(video_list.id, list_item, video_list.artitem)
     url = common.build_url(pathitems,
@@ -204,7 +228,7 @@ def build_subgenre_listing(subgenre_list, menu_data):
         sub_menu_data['path'] = [menu_data['path'][0], sel_video_list_id, sel_video_list_id]
         sub_menu_data['lolomo_known'] = False
         sub_menu_data['lolomo_contexts'] = None
-        sub_menu_data['content_type'] = g.CONTENT_SHOW
+        sub_menu_data['content_type'] = menu_data.get('content_type', g.CONTENT_SHOW)
         sub_menu_data['main_menu'] = menu_data['main_menu']\
             if menu_data.get('main_menu') else menu_data.copy()
         sub_menu_data.update({'title': subgenre_data['name']})
@@ -214,7 +238,7 @@ def build_subgenre_listing(subgenre_list, menu_data):
                                                      sub_menu_data))
     parent_menu_data = g.LOCAL_DB.get_value(menu_data['path'][1],
                                             table=TABLE_MENU_DATA, data_type=dict)
-    finalize_directory(directory_items, menu_data.get('content_type', g.CONTENT_SHOW),
+    finalize_directory(directory_items, g.CONTENT_FOLDER,
                        title=parent_menu_data['title'],
                        sort_type='sort_label')
     return menu_data.get('view')
@@ -234,9 +258,10 @@ def _create_subgenre_item(video_list_id, subgenre_data, menu_data):
 @common.time_execution(immediate=False)
 def build_video_listing(video_list, menu_data, pathitems=None, genre_id=None):
     """Build a video listing"""
-    directory_items = [_create_video_item(videoid_value, video, video_list)
+    params = get_param_watched_status_by_profile()
+    directory_items = [_create_video_item(videoid_value, video, video_list, menu_data, params)
                        for videoid_value, video
-                       in video_list.videos.iteritems()]
+                       in list(video_list.videos.items())]
     # If genre_id exists add possibility to browse lolomos subgenres
     if genre_id and genre_id != 'None':
         menu_id = 'subgenre_' + genre_id
@@ -244,7 +269,7 @@ def build_video_listing(video_list, menu_data, pathitems=None, genre_id=None):
         sub_menu_data['path'] = [menu_data['path'][0], menu_id, genre_id]
         sub_menu_data['lolomo_known'] = False
         sub_menu_data['lolomo_contexts'] = None
-        sub_menu_data['content_type'] = g.CONTENT_SHOW
+        sub_menu_data['content_type'] = menu_data.get('content_type', g.CONTENT_SHOW)
         sub_menu_data['main_menu'] = menu_data['main_menu']\
             if menu_data.get('main_menu') else menu_data.copy()
         sub_menu_data.update({'title': common.get_local_string(30089)})
@@ -258,10 +283,11 @@ def build_video_listing(video_list, menu_data, pathitems=None, genre_id=None):
                                 True))
     add_items_previous_next_page(directory_items, pathitems,
                                  video_list.perpetual_range_selector, genre_id)
-    # At the moment it is not possible to make a query with results sorted for the 'mylist',
-    # so we adding the sort order of kodi
     sort_type = 'sort_nothing'
-    if menu_data['path'][1] == 'myList':
+    if menu_data['path'][1] == 'myList' and \
+       int(g.ADDON.getSettingInt('menu_sortorder_mylist')) == 0:
+        # At the moment it is not possible to make a query with results sorted for the 'mylist',
+        # so we adding the sort order of kodi
         sort_type = 'sort_label_ignore_folders'
     parent_menu_data = g.LOCAL_DB.get_value(menu_data['path'][1],
                                             table=TABLE_MENU_DATA, data_type=dict)
@@ -272,19 +298,23 @@ def build_video_listing(video_list, menu_data, pathitems=None, genre_id=None):
 
 
 @common.time_execution(immediate=False)
-def _create_video_item(videoid_value, video, video_list):
+def _create_video_item(videoid_value, video, video_list, menu_data, params):
     """Create a tuple that can be added to a Kodi directory that represents
     a video as listed in a videolist"""
     is_movie = video['summary']['type'] == 'movie'
     videoid = common.VideoId(
         **{('movieid' if is_movie else 'tvshowid'): videoid_value})
     list_item = list_item_skeleton(video['title'])
-    add_info(videoid, list_item, video, video_list.data)
+    infos = add_info(videoid, list_item, video, video_list.data)
+    if menu_data['path'][1] != 'myList':
+        add_highlighted_title(list_item, videoid, infos)
+    list_item.setInfo('video', infos)
     add_art(videoid, list_item, video)
     url = common.build_url(videoid=videoid,
                            mode=(g.MODE_PLAY
                                  if is_movie
-                                 else g.MODE_DIRECTORY))
+                                 else g.MODE_DIRECTORY),
+                           params=params)
     list_item.addContextMenuItems(generate_context_menu_items(videoid))
     return (url, list_item, not is_movie)
 
@@ -296,7 +326,7 @@ def build_season_listing(tvshowid, season_list, pathitems=None):
     directory_items = [_create_season_item(tvshowid, seasonid_value, season,
                                            season_list)
                        for seasonid_value, season
-                       in season_list.seasons.iteritems()]
+                       in list(season_list.seasons.items())]
     add_items_previous_next_page(directory_items, pathitems, season_list.perpetual_range_selector)
     finalize_directory(directory_items, g.CONTENT_SEASON, 'sort_only_label',
                        title=' - '.join((season_list.tvshow['title'],
@@ -309,7 +339,7 @@ def _create_season_item(tvshowid, seasonid_value, season, season_list):
     a season as listed in a season listing"""
     seasonid = tvshowid.derive_season(seasonid_value)
     list_item = list_item_skeleton(season['summary']['name'])
-    add_info(seasonid, list_item, season, season_list.data)
+    add_info(seasonid, list_item, season, season_list.data, True)
     add_art(tvshowid, list_item, season_list.tvshow)
     list_item.addContextMenuItems(generate_context_menu_items(seasonid))
     url = common.build_url(videoid=seasonid, mode=g.MODE_DIRECTORY)
@@ -320,10 +350,11 @@ def _create_season_item(tvshowid, seasonid_value, season, season_list):
 @common.time_execution(immediate=False)
 def build_episode_listing(seasonid, episode_list, pathitems=None):
     """Build a season listing"""
+    params = get_param_watched_status_by_profile()
     directory_items = [_create_episode_item(seasonid, episodeid_value, episode,
-                                            episode_list)
+                                            episode_list, params)
                        for episodeid_value, episode
-                       in episode_list.episodes.iteritems()]
+                       in list(episode_list.episodes.items())]
     add_items_previous_next_page(directory_items, pathitems, episode_list.perpetual_range_selector)
     finalize_directory(directory_items, g.CONTENT_EPISODE, 'sort_episodes',
                        title=' - '.join(
@@ -332,15 +363,15 @@ def build_episode_listing(seasonid, episode_list, pathitems=None):
 
 
 @common.time_execution(immediate=False)
-def _create_episode_item(seasonid, episodeid_value, episode, episode_list):
+def _create_episode_item(seasonid, episodeid_value, episode, episode_list, params):
     """Create a tuple that can be added to a Kodi directory that represents
     an episode as listed in an episode listing"""
     episodeid = seasonid.derive_episode(episodeid_value)
     list_item = list_item_skeleton(episode['title'])
-    add_info(episodeid, list_item, episode, episode_list.data)
+    add_info(episodeid, list_item, episode, episode_list.data, True)
     add_art(episodeid, list_item, episode)
     list_item.addContextMenuItems(generate_context_menu_items(episodeid))
-    url = common.build_url(videoid=episodeid, mode=g.MODE_PLAY)
+    url = common.build_url(videoid=episodeid, mode=g.MODE_PLAY, params=params)
     return (url, list_item, False)
 
 
@@ -348,24 +379,26 @@ def _create_episode_item(seasonid, episodeid_value, episode, episode_list):
 @common.time_execution(immediate=False)
 def build_supplemental_listing(video_list, pathitems=None):  # pylint: disable=unused-argument
     """Build a supplemental listing (eg. trailers)"""
-    directory_items = [_create_supplemental_item(videoid_value, video, video_list)
+    params = get_param_watched_status_by_profile()
+    directory_items = [_create_supplemental_item(videoid_value, video, video_list, params)
                        for videoid_value, video
-                       in video_list.videos.iteritems()]
+                       in list(video_list.videos.items())]
     finalize_directory(directory_items, g.CONTENT_SHOW, 'sort_label',
                        title='Trailers')
 
 
 @common.time_execution(immediate=False)
-def _create_supplemental_item(videoid_value, video, video_list):
+def _create_supplemental_item(videoid_value, video, video_list, params):
     """Create a tuple that can be added to a Kodi directory that represents
     a video as listed in a videolist"""
     videoid = common.VideoId(
         **{'supplementalid': videoid_value})
     list_item = list_item_skeleton(video['title'])
-    add_info(videoid, list_item, video, video_list.data)
+    add_info(videoid, list_item, video, video_list.data, True)
     add_art(videoid, list_item, video)
     url = common.build_url(videoid=videoid,
-                           mode=g.MODE_PLAY)
+                           mode=g.MODE_PLAY,
+                           params=params)
     # replaceItems still look broken because it does not remove the default ctx menu
     # i hope in the future Kodi fix this
     list_item.addContextMenuItems(generate_context_menu_items(videoid), replaceItems=True)
@@ -442,3 +475,17 @@ def add_sort_methods(sort_type):
         xbmcplugin.addSortMethod(g.PLUGIN_HANDLE, xbmcplugin.SORT_METHOD_EPISODE)
         xbmcplugin.addSortMethod(g.PLUGIN_HANDLE, xbmcplugin.SORT_METHOD_LABEL)
         xbmcplugin.addSortMethod(g.PLUGIN_HANDLE, xbmcplugin.SORT_METHOD_VIDEO_TITLE)
+
+
+# This method is a temporary option transition for the current users to avoid causing frustration
+# because when enabled causes the loss of all watched status already assigned to the videos,
+# in future versions will have to be eliminated, keeping params.
+def get_param_watched_status_by_profile():
+    """
+    When enabled, the value to be used as parameter in the ListItem (of videos) will be created,
+    in order to differentiate the watched status by profiles
+    :return: when enabled return a dictionary to be add to 'build_url' params
+    """
+    if g.ADDON.getSettingBool('watched_status_by_profile'):
+        return {'profile_guid': g.LOCAL_DB.get_active_profile_guid()}
+    return None

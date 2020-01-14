@@ -1,5 +1,12 @@
 # -*- coding: utf-8 -*-
-"""Functions for Kodi library NFO creation"""
+"""
+    Copyright (C) 2017 Sebastian Golasch (plugin.video.netflix)
+    Copyright (C) 2019 Smeulf (original implementation module)
+    Functions for Kodi library NFO creation
+
+    SPDX-License-Identifier: MIT
+    See LICENSES/MIT.md for more information.
+"""
 from __future__ import absolute_import, division, unicode_literals
 
 import xml.etree.ElementTree as ET
@@ -7,17 +14,22 @@ from resources.lib.globals import g
 import resources.lib.common as common
 import resources.lib.kodi.ui as ui
 
+try:  # Python 2
+    unicode
+except NameError:  # Python 3
+    unicode = str  # pylint: disable=redefined-builtin
 
-class NFOSettings:
+
+class NFOSettings(object):
     def __init__(self, enforce=None):
         """
-        :param force: Used for export new episode, to force the nfo export status
+        :param enforce: Used for export new episode, to force the nfo export status
         """
         if enforce is None:
             self._enabled = g.ADDON.getSettingBool('enable_nfo_export')
             self._export_tvshow_id = g.ADDON.getSettingInt('export_tvshow_nfo')
         else:
-            common.debug('Export NFO enforced to {}'.format(enforce))
+            common.debug('Export NFO enforced to {}', enforce)
             self._enabled = enforce
             self._export_tvshow_id = enforce
 
@@ -89,19 +101,19 @@ class NFOSettings:
 def create_episode_nfo(episode, season, show):
     """Build NFO file for episode"""
     tags = {
-        'title': episode.get('title'),
-        'showtitle': show.get('title'),
-        'season': season.get('seq'),
-        'episode': episode.get('seq'),
-        'plot': episode.get('synopsis'),
+        #'title': episode.get('title'),
+        #'showtitle': show.get('title'),
+        #'season': season.get('seq'),
+        #'episode': episode.get('seq'),
+        #'plot': episode.get('synopsis'),
         'durationinseconds': episode.get('runtime', 0),
         'runtime': episode.get('runtime', 0) / 60,
-        'year': season.get('year'),
-        'id': episode.get('id')
+        #'year': season.get('year'),
+        #'id': episode.get('id')
     }
 
     root = _build_root_node('episodedetails', tags)
-    _add_episode_thumb(root, episode)
+    #_add_episode_thumb(root, episode)
     return root
 
 
@@ -110,13 +122,13 @@ def create_show_nfo(show):
     tags = {
         'title': show['title'],
         'showtitle': show['title'],
-        'plot': show.get('synopsis'),
+        #'plot': show.get('synopsis'),
         'id': show['id'],
         'mpaa': show.get('rating')
     }
     root = _build_root_node('tvshow', tags)
-    _add_poster(root, show)
-    _add_fanart(root, show)
+    #_add_poster(root, show)
+    #_add_fanart(root, show)
     return root
 
 
@@ -127,12 +139,12 @@ def create_movie_nfo(movie):
         'id': movie.get('id'),
         'mpaa': movie.get('rating'),
         'year': movie.get('year'),
+        'durationinseconds': movie.get('runtime', 0),
         'runtime': movie.get('runtime', 0) / 60,
     }
     root = _build_root_node('movie', tags)
     _add_poster(root, movie)
     _add_fanart(root, movie)
-    common.debug(root)
     return root
 
 
@@ -163,16 +175,15 @@ def _add_fanart(root, data):
 
 def _build_root_node(root_name, tags):
     root = ET.Element(root_name)
-    for (k, v) in tags.items():
+    for (k, v) in list(tags.items()):
         if k == 'durationinseconds':
-                tag = ET.SubElement(root, 'fileinfo')
-                tag = ET.SubElement(tag, 'streamdetails')
-                tag = ET.SubElement(tag, 'video')
-                tag = ET.SubElement(tag, k)
-                tag.text = unicode(v)
+            tag = ET.SubElement(root, 'fileinfo')
+            tag = ET.SubElement(tag, 'streamdetails')
+            tag = ET.SubElement(tag, 'video')
+            tag = ET.SubElement(tag, k)
+            tag.text = unicode(v)
         elif v:
-                tag = ET.SubElement(root, k)
-                tag.text = unicode(v)
-
-
+            pass
+            tag = ET.SubElement(root, k)
+            tag.text = unicode(v)
     return root
