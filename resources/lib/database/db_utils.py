@@ -1,9 +1,15 @@
 # -*- coding: utf-8 -*-
-"""Miscellaneous database utility functions"""
+"""
+    Copyright (C) 2017 Sebastian Golasch (plugin.video.netflix)
+    Copyright (C) 2019 Stefano Gottardo - @CastagnaIT (original implementation module)
+    Miscellaneous database utility functions
+
+    SPDX-License-Identifier: MIT
+    See LICENSES/MIT.md for more information.
+"""
 from __future__ import absolute_import, division, unicode_literals
 
 import os
-from enum import Enum
 
 import xbmc
 import xbmcvfs
@@ -22,11 +28,12 @@ TABLE_SETTINGS_MONITOR = ('settings_monitor', ['Name', 'Value'])
 TABLE_SHARED_APP_CONF = ('shared_app_config', ['Name', 'Value'])
 
 
-# Enum mapping the video library columns of the tables
-class VidLibProp(Enum):
-    exclude_update = 'ExcludeUpdate'
-    nfo_export = 'NfoExport'
-    file_path = 'FilePath'
+# Mapping the video library columns of the tables
+VidLibProp = {
+    'exclude_update': 'ExcludeUpdate',
+    'nfo_export': 'NfoExport',
+    'file_path': 'FilePath'
+}
 
 
 def get_local_db_path(db_filename):

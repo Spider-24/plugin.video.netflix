@@ -1,5 +1,12 @@
 # -*- coding: utf-8 -*-
-"""Functions to create new databases"""
+"""
+    Copyright (C) 2017 Sebastian Golasch (plugin.video.netflix)
+    Copyright (C) 2019 Stefano Gottardo - @CastagnaIT (original implementation module)
+    Functions to create a new SQLite database
+
+    SPDX-License-Identifier: MIT
+    See LICENSES/MIT.md for more information.
+"""
 from __future__ import absolute_import, division, unicode_literals
 
 import sqlite3 as sql
@@ -9,7 +16,7 @@ import resources.lib.database.db_utils as db_utils
 
 
 def create_database(db_file_path, db_filename):
-    common.debug('The SQLite database {} is empty, creating tables'.format(db_filename))
+    common.debug('The SQLite database {} is empty, creating tables', db_filename)
     if db_utils.LOCAL_DB_FILENAME == db_filename:
         _create_local_database(db_file_path)
     if db_utils.SHARED_DB_FILENAME == db_filename:

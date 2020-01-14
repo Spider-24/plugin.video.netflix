@@ -1,5 +1,12 @@
 # -*- coding: utf-8 -*-
-"""Functions to create new databases"""
+"""
+    Copyright (C) 2017 Sebastian Golasch (plugin.video.netflix)
+    Copyright (C) 2019 Stefano Gottardo - @CastagnaIT (original implementation module)
+    Functions to create a new MySQL database
+
+    SPDX-License-Identifier: MIT
+    See LICENSES/MIT.md for more information.
+"""
 from __future__ import absolute_import, division, unicode_literals
 
 import mysql.connector
@@ -10,7 +17,7 @@ import resources.lib.common as common
 def create_database(config):
     """Create a new database"""
     db_name = config.pop('database', None)
-    common.debug('The MySQL database {} does not exist, creating a new one'.format(db_name))
+    common.debug('The MySQL database {} does not exist, creating a new one', db_name)
     conn = mysql.connector.connect(**config)
     cur = conn.cursor()
 

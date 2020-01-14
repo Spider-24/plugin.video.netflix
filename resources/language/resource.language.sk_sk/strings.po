@@ -33,8 +33,8 @@ msgid "Recommendations"
 msgstr "Odporúčania"
 
 msgctxt "#30002"
-msgid "Adult Pin"
-msgstr "Rodičovský zámok"
+msgid "Enter PIN to watch restricted content"
+msgstr ""
 
 msgctxt "#30003"
 msgid "Search term"
@@ -49,19 +49,19 @@ msgid "E-mail"
 msgstr "E-mail"
 
 msgctxt "#30006"
-msgid "Adult verification failed"
-msgstr "Zlyhalo odomknutie rodičovského zámku"
+msgid "Incorrect PIN. Try again."
+msgstr ""
 
 msgctxt "#30007"
-msgid "Please Check your adult pin"
-msgstr "Prosím skontrolujte heslo k rodičovskému zámku"
+msgid "Parental Control PIN (4 digits)"
+msgstr ""
 
 msgctxt "#30008"
 msgid "Login failed"
 msgstr "Prihlásenie sa nepodarilo"
 
 msgctxt "#30009"
-msgid "Please Check your credentials"
+msgid "Please check your e-mail and password"
 msgstr "Prosím skontrolujte prihlasovacie údaje"
 
 msgctxt "#30010"
@@ -83,6 +83,14 @@ msgstr "Žiadna zhoda vo vyhľadávaní"
 msgctxt "#30014"
 msgid "Account"
 msgstr "Účet"
+
+msgctxt "#30015"
+msgid "Other options"
+msgstr ""
+
+msgctxt "#30016"
+msgid "ESN"
+msgstr ""
 
 msgctxt "#30017"
 msgid "Logout"
@@ -141,8 +149,8 @@ msgid "Remove from library"
 msgstr "Odstrániť z knižnice"
 
 msgctxt "#30031"
-msgid "Change library title"
-msgstr "Zmeniť názov v knižnici"
+msgid "General"
+msgstr ""
 
 msgctxt "#30032"
 msgid "Tracking"
@@ -153,8 +161,8 @@ msgid "Enable Dolby Digital Plus (DDPlus HQ and Atmos on Premium)"
 msgstr "Povoliť Dolby Digital Plus (DDPlus HQ a Atmos on Premium)"
 
 msgctxt "#30034"
-msgid "ESN (set automatically, can be changed manually)"
-msgstr "ESN (nastavené automaticky, môžete to ručne zmeniť)"
+msgid "Manual ESN"
+msgstr ""
 
 msgctxt "#30035"
 msgid "InputStream Adaptive settings..."
@@ -197,8 +205,8 @@ msgid "View for profiles"
 msgstr "Zobrazenie pre profily"
 
 msgctxt "#30045"
-msgid "[COLOR cyan][B]-- NEXT PAGE --[/B][/COLOR]"
-msgstr "[COLOR cyan][B]-- ĎALŠIA STRANA --[/B][/COLOR]"
+msgid "Thumb rating removed|You rated a thumb down|You rated a thumb up"
+msgstr ""
 
 msgctxt "#30046"
 msgid "InputStream addon is not enabled"

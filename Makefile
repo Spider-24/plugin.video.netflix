@@ -1,5 +1,4 @@
-ENVS := flake8,py27,py36
-export PYTHONPATH := .:$(CURDIR)/modules/enum:$(CURDIR)/modules/mysql-connector-python:$(CURDIR)/resources/lib:$(CURDIR)/test
+export PYTHONPATH := .:$(CURDIR)/modules/mysql-connector-python:$(CURDIR)/resources/lib:$(CURDIR)/test
 addon_xml := addon.xml
 
 # Collect information to build as sensible package name
@@ -13,6 +12,8 @@ include_files = addon.py addon.xml LICENSE.txt modules/ README.md resources/ ser
 include_paths = $(patsubst %,$(name)/%,$(include_files))
 exclude_files = \*.new \*.orig \*.pyc \*.pyo
 zip_dir = $(name)/
+
+languages := de_de es_es fi_fi fr_fr he_il hr_hr it_it ko_kr nl_nl pl_pl pt_br pt_pt sk_sk sv_sv
 
 blue = \e[1;34m
 white = \e[1;37m
@@ -28,19 +29,25 @@ clean:
 
 test: sanity unit
 
-sanity: tox pylint
+sanity: tox pylint language
 
 tox:
 	@echo -e "$(white)=$(blue) Starting sanity tox test$(reset)"
-	tox -q -e $(ENVS)
+	tox -q -e
 
 pylint:
 	@echo -e "$(white)=$(blue) Starting sanity pylint test$(reset)"
 	pylint resources/lib/ test/
 
+language:
+	@echo -e "$(white)=$(blue) Starting language test$(reset)"
+	@-$(foreach lang,$(languages), \
+		msgcmp resources/language/resource.language.$(lang)/strings.po resources/language/resource.language.en_gb/strings.po; \
+	)
+
 addon: clean
 	@echo -e "$(white)=$(blue) Starting sanity addon tests$(reset)"
-	kodi-addon-checker . --branch=leia
+	kodi-addon-checker --branch=leia
 
 unit:
 	@echo -e "$(white)=$(blue) Starting unit tests$(reset)"
@@ -48,10 +55,10 @@ unit:
 
 run:
 	@echo -e "$(white)=$(blue) Run CLI$(reset)"
-	coverage run -a service.py &
-	sleep 10
 	coverage run -a test/run.py /action/purge_cache/
 	coverage run -a test/run.py /action/purge_cache/?on_disk=True
+	coverage run -a service.py &
+	sleep 10
 	coverage run -a test/run.py /directory/root
 	coverage run -a test/run.py /directory/profiles
 	coverage run -a test/run.py /directory/home

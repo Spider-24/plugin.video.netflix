@@ -142,7 +142,6 @@ def sync_mylist_to_library():
     nfo_settings = nfo.NFOSettings()
     nfo_settings.show_export_dialog()
     for videoid in api.mylist_items_switch_profiles():
-        print('Ben: videoid = {} - {}'.format(videoid, common.get_local_string(30018)))
         execute_library_tasks(videoid, [export_item],
                               common.get_local_string(30018),
                               sync_mylist=False,

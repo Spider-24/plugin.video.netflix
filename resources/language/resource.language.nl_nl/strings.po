@@ -33,8 +33,8 @@ msgid "Recommendations"
 msgstr "Aanbevelingen"
 
 msgctxt "#30002"
-msgid "Adult Pin"
-msgstr "Pincode"
+msgid "Enter PIN to watch restricted content"
+msgstr "Voer uw PIN in"
 
 msgctxt "#30003"
 msgid "Search term"
@@ -42,26 +42,26 @@ msgstr "Zoekterm"
 
 msgctxt "#30004"
 msgid "Password"
-msgstr "Paswoord"
+msgstr "Wachtwoord"
 
 msgctxt "#30005"
 msgid "E-mail"
 msgstr "E-mail"
 
 msgctxt "#30006"
-msgid "Adult verification failed"
-msgstr "Code kinderslot incorrect"
+msgid "Incorrect PIN. Try again."
+msgstr "Onjuiste PIN"
 
 msgctxt "#30007"
-msgid "Please Check your adult pin"
-msgstr "Controleer de code van het kinderslot"
+msgid "Parental Control PIN (4 digits)"
+msgstr "Ouderlijktoezicht PIN"
 
 msgctxt "#30008"
 msgid "Login failed"
 msgstr "Inloggen mislukt"
 
 msgctxt "#30009"
-msgid "Please Check your credentials"
+msgid "Please check your e-mail and password"
 msgstr "Controleer uw inloggegevens"
 
 msgctxt "#30010"
@@ -83,6 +83,14 @@ msgstr "Geen overeenkomsten gevonden"
 msgctxt "#30014"
 msgid "Account"
 msgstr "Account"
+
+msgctxt "#30015"
+msgid "Other options"
+msgstr "Andere opties"
+
+msgctxt "#30016"
+msgid "ESN"
+msgstr "ESN"
 
 msgctxt "#30017"
 msgid "Logout"
@@ -106,7 +114,7 @@ msgstr "Aan 'Mijn lijst’ toevoegen"
 
 msgctxt "#30022"
 msgid "(between 0 & 10)"
-msgstr "(tussen 0 & 10)"
+msgstr "(tussen 0 en 10)"
 
 msgctxt "#30023"
 msgid "Expert"
@@ -141,8 +149,8 @@ msgid "Remove from library"
 msgstr "Uit de bibliotheek verwijderen"
 
 msgctxt "#30031"
-msgid "Change library title"
-msgstr "Titel bibliotheek aanpassen"
+msgid "General"
+msgstr "Algemeen"
 
 msgctxt "#30032"
 msgid "Tracking"
@@ -153,12 +161,12 @@ msgid "Enable Dolby Digital Plus (DDPlus HQ and Atmos on Premium)"
 msgstr "Dolby Digital Plus inschakelen (DDPlus HQ en Atmos op Netflix Premium)"
 
 msgctxt "#30034"
-msgid "ESN (set automatically, can be changed manually)"
-msgstr "ESN (automatisch, kan handmatig aangepast worden)"
+msgid "Manual ESN"
+msgstr "Handmatig ESN"
 
 msgctxt "#30035"
-msgid "Inputstream Addon Settings..."
-msgstr "Inputstream Addon instellingen…"
+msgid "InputStream Adaptive settings..."
+msgstr "InputStream Adaptive instellingen…"
 
 msgctxt "#30036"
 msgid "Always use the original title on export"
@@ -197,12 +205,12 @@ msgid "View for profiles"
 msgstr "View voor profielen"
 
 msgctxt "#30045"
-msgid "[COLOR cyan][B]-- NEXT PAGE --[/B][/COLOR]"
-msgstr "[COLOR cyan][B]-- VOLGENDE PAGINA --[/B][/COLOR]"
+msgid "Thumb rating removed|You rated a thumb down|You rated a thumb up"
+msgstr ""
 
 msgctxt "#30046"
-msgid "Inputstream addon is not enabled"
-msgstr "Inputstream add-on is niet ingeschakeld"
+msgid "InputStream addon is not enabled"
+msgstr "InputStream add-on is niet ingeschakeld"
 
 msgctxt "#30047"
 msgid "Finally remove?"
@@ -226,7 +234,7 @@ msgstr "Request fout"
 
 msgctxt "#30052"
 msgid "Unable to complete the request at this time"
-msgstr "Het is niet mogelijk om het request uit te voeren op dit moment"
+msgstr "Het is niet mogelijk om de aanvraag op dit moment te voltooien"
 
 msgctxt "#30053"
 msgid "Auto Login"
@@ -265,24 +273,24 @@ msgid "Update inside library"
 msgstr "Updaten in de bibliotheek"
 
 msgctxt "#30062"
-msgid "Enable/disable adult pin. Active:"
-msgstr "Adult PIN Inschakelen/uitschakelen. Ingeschakeld:"
+msgid "Parental controls"
+msgstr "Ouderlijktoezicht"
 
 msgctxt "#30063"
 msgid "new episodes added to library"
 msgstr "niewe afleveringen werden toegevoegd in de bibliotheek"
 
 msgctxt "#30064"
-msgid "Export new episodes"
-msgstr "Exporteer nieuwe afleveringen"
+msgid "Perform auto-update"
+msgstr "Voer auto-update uit"
 
 msgctxt "#30065"
-msgid "Auto-update"
-msgstr "Automatisch updaten"
+msgid "Auto-update for tv shows seasons and episodes"
+msgstr "Auto-update voor tvprogrammas"
 
 msgctxt "#30066"
-msgid "never"
-msgstr "nooit"
+msgid "Debug logging level"
+msgstr "Foutopsporing log niveau"
 
 msgctxt "#30067"
 msgid "daily"
@@ -433,7 +441,7 @@ msgid "Error details have been written to the Kodi logfile. If the error message
 msgstr "Een gedetaileerde foutmelding werd weggeschreven in het Kodi logboek. Als de foutmelding niet helpt bij het oplossen van het probleem, of the probleem blijft zich voordoen, gelieve deze fout te melden op GitHub. Voeg de volledige debug log toe aan je probleemrapport (schakel \"Debug logboek\" in in de Kodi instellingen)."
 
 msgctxt "#30104"
-msgid "The addon encountered to following error:"
+msgid "The addon encountered the following error:"
 msgstr "Deze add-on ondervond de volgende fout:"
 
 msgctxt "#30105"
@@ -445,12 +453,12 @@ msgid "Invalid PIN"
 msgstr "Foutieve PIN"
 
 msgctxt "#30107"
-msgid "Disabled PIN verfication"
-msgstr "PIN verificatie uitgeschakeld"
+msgid "PIN protection is off."
+msgstr "PIN beveiliging uit."
 
 msgctxt "#30108"
-msgid "Enabled PIN verfication"
-msgstr "Activeer PIN verificatie"
+msgid "All content is protected by PIN."
+msgstr "Alle content is beveiligd met de PIN"
 
 msgctxt "#30109"
 msgid "Login successful"
@@ -569,12 +577,12 @@ msgid "Enable VP9 profiles (disable if it causes artifacts)"
 msgstr "VP9 profielen inschakelen (schakel dit uit bij schermartifacten)"
 
 msgctxt "#30138"
-msgid "The requested action timed out. The background services may not yet be available if you just started Kodi/the addon. In this case, try again in a moment."
-msgstr "The gevraagde actie duurde te lang. De achtergronddiensten zijn mogelijk nog niet beschikbaar als je net Kodi of de add-on hebt gestart. In dat geval, probeer zo meteen opnieuw."
+msgid "The background services may not yet be available if you just started Kodi/the addon. In this case, try again in a moment."
+msgstr "De achtergronddiensten zijn mogelijk nog niet beschikbaar als je net Kodi of de add-on hebt gestart. In dat geval, probeer zo meteen opnieuw."
 
 msgctxt "#30139"
-msgid "Enable IPC over HTTP (use when experiencing AddonSignals timeouts)"
-msgstr "IPC over HTTP inschakelen (gebruik it wanneer je AddonSignals timeouts ondervindt)"
+msgid "Enable IPC over HTTP (use when Addon Signals timeout messages appear)"
+msgstr "IPC over HTTP inschakelen (gebruik it wanneer je Addon Signals timeouts ondervindt)"
 
 msgctxt "#30140"
 msgid "Migrate Library to new format"
@@ -686,7 +694,7 @@ msgstr "Hoofdmenu items"
 
 msgctxt "#30167"
 msgid "My list"
-msgstr "Mijn Lijst"
+msgstr "Mijn lijst"
 
 msgctxt "#30168"
 msgid "Continue watching"
@@ -733,12 +741,12 @@ msgid "Open UpNext Addon settings"
 msgstr "Open de Up Next add-on instellingen"
 
 msgctxt "#30179"
-msgid "Show the trailers"
+msgid "Show trailers & more"
 msgstr "Toon voorfilmpjes"
 
 msgctxt "#30180"
-msgid "No trailers available"
-msgstr "Geen voorfilmpjes beschikbaar"
+msgid "There has been a problem with login, it is possible that your account has not been confirmed or renewed."
+msgstr "Er was een probleem met het inloggen. Mogelijk moeten je login gegevens nog bevestigd of hernieuwd worden."
 
 msgctxt "#30181"
 msgid "Disable subtitles if there are no forced subtitles streams (Works only if Kodi Player is set to \"Only forced\" subtitles)"
@@ -871,3 +879,79 @@ msgstr "Er is geen device dat automatische updates van de gedeelde-bibliotheek k
 msgctxt "#30213"
 msgid "InputStream Helper settings..."
 msgstr "InputStream Helper instellingen…"
+
+msgctxt "#30214"
+msgid "Force the update of my list"
+msgstr "Forceer de vernieuwing van Mijn lijst"
+
+msgctxt "#30215"
+msgid "Highlight titles included in my list with a color"
+msgstr "Benadruk titels uit Mijn lijst met een kleur"
+
+msgctxt "#30216"
+msgid "Show ESN in use"
+msgstr "Toon de gebruikte ESN"
+
+msgctxt "#30217"
+msgid "Reset ESN"
+msgstr "Reset ESN"
+
+msgctxt "#30218"
+msgid "Are you sure you want to reset the ESN?\r\nIf you confirm, wait until you receive the login message."
+msgstr "Ben je zeker dat je het ESN wil resetten?\r\nAls je reset, wacht dan tot je de login bevestiging krijgt."
+
+msgctxt "#30219"
+msgid "Disable notification for synchronization completed"
+msgstr "Melding voor \"Synchronisatie voltooid\" uitschakelen"
+
+msgctxt "#30220"
+msgid "The Kodi library has been updated"
+msgstr "De Kodi bibliotheel werd bijgewerkt"
+
+msgctxt "#30221"
+msgid "Owner account"
+msgstr "Eigenaar account"
+
+msgctxt "#30222"
+msgid "Kid account"
+msgstr "Kinderen account"
+
+msgctxt "#30223"
+msgid "Synchronization now uses \"My List\" of profile {}"
+msgstr "Synchronisatie gebruikt nu \"Mijn lijst\" van profiel {}"
+
+msgctxt "#30224"
+msgid "Auto update mode"
+msgstr "Automatisch bijwerken modus"
+
+msgctxt "#30225"
+msgid "Manual"
+msgstr "Handmatig"
+
+msgctxt "#30226"
+msgid "Scheduled"
+msgstr "Ingepland"
+
+msgctxt "#30227"
+msgid "Synchronize Kodi library with My List"
+msgstr "Synchroniseer Kodi bibliotheek met My List"
+
+msgctxt "#30228"
+msgid "Use \"My list\" of the current profile"
+msgstr "Gebruik \"Mijn lijst\" van het huidige profiel"
+
+msgctxt "#30229"
+msgid "Show the name of the selected profile"
+msgstr "Toon de naam van het geselecteerde profiel"
+
+msgctxt "#30230"
+msgid "Check for updates now"
+msgstr "Controleer nu voor updates"
+
+msgctxt "#30231"
+msgid "Do you want to check update now?"
+msgstr "Wil je nu controleren voor een update?"
+
+msgctxt "#30232"
+msgid "Restrict by Maturity Level"
+msgstr ""

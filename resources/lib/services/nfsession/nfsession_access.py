@@ -39,8 +39,11 @@ class NFSessionAccess(NFSessionRequests, NFSessionCookie):
         If so, do the login before the user requests it"""
         try:
             common.get_credentials()
-            if not self._is_logged_in():
+            if not self.is_logged_in():
                 self._login()
+            else:
+                # A hack way to full load requests module without blocking the service startup
+                common.send_signal(signal='startup_requests_module', non_blocking=True)
             self.is_prefetch_login = True
         except requests.exceptions.RequestException as exc:
             # It was not possible to connect to the web service, no connection, network problem, etc
@@ -55,8 +58,8 @@ class NFSessionAccess(NFSessionRequests, NFSessionCookie):
             ui.show_notification(common.get_local_string(30180), time=10000)
 
     @common.time_execution(immediate=True)
-    def _is_logged_in(self):
-        """Check if the user is logged in and if so refresh session data"""
+    def is_logged_in(self):
+        """Check if there are valid login data"""
         valid_login = self._load_cookies() and \
             self._verify_session_cookies() and \
             self._verify_esn_existence()
@@ -69,6 +72,14 @@ class NFSessionAccess(NFSessionRequests, NFSessionCookie):
         if not g.get_esn():
             return self.try_refresh_session_data()
         return True
+
+    def startup_requests_module(self, data=None):  # pylint: disable=unused-argument
+        """A hack way to full load requests module before making any other calls"""
+        # The first call made with 'requests' module, can takes more than one second longer then
+        # usual to elaborate (depend from device/os/connection), to camouflage this delay
+        # and make the add-on frontend faster this request is made when the service is started.
+        # Side note: authURL probably has a expiration time not knowing which one we are obliged to refresh session data
+        self.try_refresh_session_data()
 
     @common.addonsignals_return_call
     def login(self):
@@ -89,8 +100,7 @@ class NFSessionAccess(NFSessionRequests, NFSessionCookie):
                 'login',
                 data=_login_payload(common.get_credentials(), auth_url))
             try:
-                website.validate_login(login_response)
-                website.extract_session_data(login_response)
+                website.extract_session_data(login_response, validate=True)
                 common.info('Login successful')
                 ui.show_notification(common.get_local_string(30109))
                 self.update_session_data(current_esn)

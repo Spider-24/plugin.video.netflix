@@ -1,12 +1,19 @@
 # -*- coding: utf-8 -*-
-"""Handle playback requests"""
+"""
+    Copyright (C) 2017 Sebastian Golasch (plugin.video.netflix)
+    Copyright (C) 2018 Caphm (original implementation module)
+    Handle playback requests
+
+    SPDX-License-Identifier: MIT
+    See LICENSES/MIT.md for more information.
+"""
 from __future__ import absolute_import, division, unicode_literals
 
 import xbmc
 import xbmcplugin
 import xbmcgui
-import inputstreamhelper
 
+from resources.lib.api.exceptions import MetadataNotAvailable
 from resources.lib.globals import g
 import resources.lib.common as common
 import resources.lib.api.shakti as api
@@ -38,19 +45,25 @@ INPUTSTREAM_SERVER_CERTIFICATE = (
 
 class InputstreamError(Exception):
     """There was an error with setting up inputstream.adaptive"""
-    pass
 
 
-@common.inject_video_id(path_offset=0)
+@common.inject_video_id(path_offset=0, pathitems_arg='videoid', inject_full_pathitems=True)
 @common.time_execution(immediate=False)
 def play(videoid):
     """Play an episode or movie as specified by the path"""
-    common.debug('Playing {}'.format(videoid))
-    metadata = api.metadata(videoid)
-    common.debug('Metadata is {}'.format(metadata))
+    common.info('Playing {}', videoid)
+    metadata = [{}, {}]
+    try:
+        metadata = api.metadata(videoid)
+        common.debug('Metadata is {}', metadata)
+    except MetadataNotAvailable:
+        common.warn('Metadata not available for {}', videoid)
 
-    if not _verify_pin(metadata[0].get('requiresPin', False)):
-        ui.show_notification(common.get_local_string(30106))
+    # Parental control PIN
+    pin_result = _verify_pin(metadata[0].get('requiresPin', False))
+    if not pin_result:
+        if pin_result is not None:
+            ui.show_notification(common.get_local_string(30106), time=10000)
         xbmcplugin.endOfDirectory(g.PLUGIN_HANDLE, succeeded=False)
         return
 
@@ -79,7 +92,8 @@ def play(videoid):
         'art': art,
         'timeline_markers': get_timeline_markers(metadata[0]),
         'upnext_info': get_upnext_info(videoid, (infos, art), metadata),
-        'resume_position': resume_position})
+        'resume_position': resume_position},
+                       non_blocking=True)
     xbmcplugin.setResolvedUrl(
         handle=g.PLUGIN_HANDLE,
         succeeded=True,
@@ -97,6 +111,7 @@ def get_inputstream_listitem(videoid):
     list_item.setContentLookup(False)
     list_item.setMimeType('application/dash+xml')
 
+    import inputstreamhelper
     is_helper = inputstreamhelper.Helper('mpd', drm='widevine')
 
     if not is_helper.check_inputstream():
@@ -125,11 +140,10 @@ def get_inputstream_listitem(videoid):
 
 
 def _verify_pin(pin_required):
-    if (not pin_required or
-            g.ADDON.getSetting('adultpin_enable').lower() == 'false'):
+    if not pin_required:
         return True
     pin = ui.ask_for_pin()
-    return pin is not None and api.verify_pin(pin)
+    return None if not pin else api.verify_pin(pin)
 
 
 @common.time_execution(immediate=False)
@@ -138,12 +152,12 @@ def get_upnext_info(videoid, current_episode, metadata):
     try:
         next_episode_id = _find_next_episode(videoid, metadata)
     except (TypeError, KeyError):
-        import traceback
-        common.debug(traceback.format_exc())
+        # import traceback
+        # common.debug(traceback.format_exc())
         common.debug('There is no next episode, not setting up Up Next')
         return {}
 
-    common.debug('Next episode is {}'.format(next_episode_id))
+    common.debug('Next episode is {}', next_episode_id)
     next_episode = infolabels.add_info_for_playback(next_episode_id,
                                                     xbmcgui.ListItem())
     next_info = {
@@ -157,9 +171,10 @@ def get_upnext_info(videoid, current_episode, metadata):
             next_episode_id.tvshowid,
             next_episode_id.seasonid,
             next_episode_id.episodeid)
-        next_info['play_info'] = {'play_path': xbmc.translatePath(filepath)}
+        next_info['play_info'] = {'play_path': g.py2_decode(xbmc.translatePath(filepath))}
     else:
-        next_info['play_info'] = {'play_path': common.build_url(videoid=next_episode_id, mode=g.MODE_PLAY)}
+        next_info['play_info'] = {'play_path': common.build_url(videoid=next_episode_id,
+                                                                mode=g.MODE_PLAY)}
     if 'creditsOffset' in metadata[0]:
         next_info['notification_time'] = (metadata[0]['runtime'] -
                                           metadata[0]['creditsOffset'])

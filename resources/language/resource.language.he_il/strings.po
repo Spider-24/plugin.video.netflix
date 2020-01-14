@@ -34,8 +34,8 @@ msgid "Recommendations"
 msgstr "המלצות"
 
 msgctxt "#30002"
-msgid "Adult Pin"
-msgstr "קוד מבוגרים"
+msgid "Enter PIN to watch restricted content"
+msgstr ""
 
 msgctxt "#30003"
 msgid "Search term"
@@ -50,19 +50,19 @@ msgid "E-mail"
 msgstr "אי-מייל"
 
 msgctxt "#30006"
-msgid "Adult verification failed"
-msgstr "אימות קוד מבוגרים נכשל"
+msgid "Incorrect PIN. Try again."
+msgstr ""
 
 msgctxt "#30007"
-msgid "Please Check your adult pin"
-msgstr "אנא בדוק את קוד המבוגרים"
+msgid "Parental Control PIN (4 digits)"
+msgstr ""
 
 msgctxt "#30008"
 msgid "Login failed"
 msgstr "הכניסה נכשלה"
 
 msgctxt "#30009"
-msgid "Please Check your credentials"
+msgid "Please check your e-mail and password"
 msgstr "אנא בדוק את הגדרות ההרשאה (שם משתמש וסיסמה)"
 
 msgctxt "#30010"
@@ -142,8 +142,8 @@ msgid "Remove from library"
 msgstr "הסר מהספרייה"
 
 msgctxt "#30031"
-msgid "Change library title"
-msgstr "שנה כותרת ספרייה"
+msgid "General"
+msgstr ""
 
 msgctxt "#30032"
 msgid "Tracking"
@@ -154,8 +154,8 @@ msgid "Enable Dolby Digital Plus (DDPlus HQ and Atmos on Premium)"
 msgstr "תשתמש בפורמט דולבי"
 
 msgctxt "#30034"
-msgid "ESN (set automatically, can be changed manually)"
-msgstr "רשת ESN (ברירת מחדל אוטומטי, ניתן לשנות ידנית)"
+msgid "Manual ESN"
+msgstr ""
 
 msgctxt "#30035"
 msgid "InputStream Adaptive settings..."
@@ -198,8 +198,8 @@ msgid "View for profiles"
 msgstr "תצוגה עבור פרופילים"
 
 msgctxt "#30045"
-msgid "[COLOR cyan][B]-- NEXT PAGE --[/B][/COLOR]"
-msgstr "[COLOR cyan][B]-- לדף הבא --[/B][/COLOR]"
+msgid "Thumb rating removed|You rated a thumb down|You rated a thumb up"
+msgstr ""
 
 msgctxt "#30046"
 msgid "InputStream addon is not enabled"

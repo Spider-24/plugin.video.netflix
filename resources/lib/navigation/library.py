@@ -1,10 +1,18 @@
 # -*- coding: utf-8 -*-
-"""Navigation handler for library actions"""
+"""
+    Copyright (C) 2017 Sebastian Golasch (plugin.video.netflix)
+    Copyright (C) 2018 Caphm (original implementation module)
+    Navigation handler for library actions
+
+    SPDX-License-Identifier: MIT
+    See LICENSES/MIT.md for more information.
+"""
 from __future__ import absolute_import, division, unicode_literals
 
-import resources.lib.api.shakti as api
 import resources.lib.common as common
 import resources.lib.kodi.library as library
+import resources.lib.kodi.library_autoupdate as library_au
+import resources.lib.kodi.library_items as library_items
 import resources.lib.kodi.nfo as nfo
 import resources.lib.kodi.ui as ui
 from resources.lib.globals import g
@@ -14,8 +22,7 @@ class LibraryActionExecutor(object):
     """Executes actions"""
     # pylint: disable=no-self-use
     def __init__(self, params):
-        common.debug('Initializing LibraryActionExecutor: {}'
-                     .format(params))
+        common.debug('Initializing LibraryActionExecutor: {}', params)
         self.params = params
 
     @common.inject_video_id(path_offset=1)
@@ -81,40 +88,66 @@ class LibraryActionExecutor(object):
     #        videoid, [library.remove_item, library.export_item],
     #        sync_mylist=self.params.get('sync_mylist', False))
 
-    def initial_mylist_sync(self, pathitems):
-        """Perform an initial sync of My List and the Kodi library"""
-        # pylint: disable=unused-argument
-        do_it = ui.ask_for_confirmation(common.get_local_string(30122),
-                                        common.get_local_string(30123))
-        if not do_it or not g.ADDON.getSettingBool('mylist_library_sync'):
+    def sync_mylist(self, pathitems):  # pylint: disable=unused-argument
+        """
+        Perform a full sync of Netflix "My List" with the Kodi library
+        """
+        if not ui.ask_for_confirmation(common.get_local_string(30122),
+                                       common.get_local_string(30123)):
             return
-        common.debug('Performing full sync from My List to Kodi library')
-        library.purge()
-        nfo_settings = nfo.NFOSettings()
-        nfo_settings.show_export_dialog()
-        for videoid in api.video_list(
-                api.list_id_for_type('queue')).videoids:
-            library.execute_library_tasks(videoid, [library.export_item],
-                                          common.get_local_string(30018),
-                                          sync_mylist=False,
-                                          nfo_settings=nfo_settings)
+        library.sync_mylist_to_library()
 
-    def purge(self, pathitems):
+    def auto_upd_run_now(self, pathitems):  # pylint: disable=unused-argument
+        """
+        Perform an auto update of Kodi library to add new seasons/episodes of tv shows
+        """
+        if not ui.ask_for_confirmation(common.get_local_string(30065),
+                                       common.get_local_string(30231)):
+            return
+        library_au.auto_update_library(False, False)
+
+    def service_auto_upd_run_now(self, pathitems):  # pylint: disable=unused-argument
+        """
+        Perform an auto update of Kodi library to add new seasons/episodes of tv shows
+        and if set also synchronize the Netflix "My List" with the Kodi library
+        """
+        # Executed by the service in the library_updater module
+        library_au.auto_update_library(g.ADDON.getSettingBool('lib_sync_mylist'), True)
+
+    def _get_mylist_profile_guid(self):
+        return g.SHARED_DB.get_value('sync_mylist_profile_guid',
+                                     g.LOCAL_DB.get_guid_owner_profile())
+
+    def sync_mylist_sel_profile(self, pathitems):  # pylint: disable=unused-argument
+        """
+        Set the current profile for the synchronization of Netflix "My List" with the Kodi library
+        """
+        g.SHARED_DB.set_value('sync_mylist_profile_guid', g.LOCAL_DB.get_active_profile_guid())
+        profile_name = g.LOCAL_DB.get_profile_config('profileName', '')
+        ui.show_notification(common.get_local_string(30223).format(profile_name), time=10000)
+
+    def sync_mylist_shw_profile(self, pathitems):  # pylint: disable=unused-argument
+        """
+        Show the name of profile chosen
+        for the synchronization of Netflix "My List" with the Kodi library
+        """
+        profile_guid = self._get_mylist_profile_guid()
+        profile_name = g.LOCAL_DB.get_profile_config('profileName', '', profile_guid)
+        ui.show_ok_dialog('Netflix',
+                          common.get_local_string(30223).format(profile_name))
+
+    def purge(self, pathitems):  # pylint: disable=unused-argument
         """Delete all previously exported items from the Kodi library"""
-        # pylint: disable=unused-argument
         if ui.ask_for_confirmation(common.get_local_string(30125),
                                    common.get_local_string(30126)):
             library.purge()
 
     def migrate(self, pathitems):  # pylint: disable=unused-argument
         """Migrate exported items from old library format to the new format"""
-        for videoid in library.get_previously_exported_items():
+        for videoid in library_items.get_previously_exported_items():
             library.execute_library_tasks(videoid, [library.export_item],
                                           common.get_local_string(30018),
                                           sync_mylist=False)
-
-    def export_all_new_episodes(self, pathitems):  # pylint: disable=unused-argument
-        library.export_all_new_episodes()
 
     @common.inject_video_id(path_offset=1)
     def export_new_episodes(self, videoid):
@@ -122,12 +155,12 @@ class LibraryActionExecutor(object):
 
     @common.inject_video_id(path_offset=1)
     def exclude_from_auto_update(self, videoid):
-        library.exclude_show_from_auto_update(videoid, True)
+        library_au.exclude_show_from_auto_update(videoid, True)
         common.refresh_container()
 
     @common.inject_video_id(path_offset=1)
     def include_in_auto_update(self, videoid):
-        library.exclude_show_from_auto_update(videoid, False)
+        library_au.exclude_show_from_auto_update(videoid, False)
         common.refresh_container()
 
     def mysql_test(self, pathitems):
@@ -136,7 +169,6 @@ class LibraryActionExecutor(object):
         #  to initialize the database and then the test is also performed
         #  in addition, you must also wait for the timeout to obtain any connection error
         #  Perhaps creating a particular modal dialog with connection parameters can help
-        pass
 
     def set_autoupdate_device(self, pathitems):  # pylint: disable=unused-argument
         """Set the current device to manage auto-update of the shared-library (MySQL)"""

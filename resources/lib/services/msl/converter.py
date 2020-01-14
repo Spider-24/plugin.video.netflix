@@ -216,18 +216,15 @@ def _convert_audio_downloadable(downloadable, adaptation_set, init_length,
 
 
 def _convert_text_track(text_track, period, default, isa_version):
-
     if text_track.get('ttDownloadables'):
         # Only one subtitle representation per adaptationset
         downloadable = text_track['ttDownloadables']
         # common.save_file('downloadable.log', str(downloadable))
 
-
         if downloadable.get('simplesdh'):
             content_profile = 'simplesdh'
         else:
             content_profile = list(downloadable)[0]
-        
 
         is_ios8 = content_profile == 'webvtt-lssdh-ios8'
         impaired = 'true' if text_track['trackType'] == 'ASSISTIVE' else 'false'

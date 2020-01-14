@@ -1,5 +1,12 @@
 # -*- coding: utf-8 -*-
-"""MySQL database"""
+"""
+    Copyright (C) 2017 Sebastian Golasch (plugin.video.netflix)
+    Copyright (C) 2019 Stefano Gottardo - @CastagnaIT (original implementation module)
+    Main functions for access to MySQL database
+
+    SPDX-License-Identifier: MIT
+    See LICENSES/MIT.md for more information.
+"""
 from __future__ import absolute_import, division, unicode_literals
 
 from functools import wraps
@@ -29,8 +36,8 @@ def handle_connection(func):
                 args[0].conn = mysql.connector.connect(**args[0].config)
                 conn = args[0].conn
             return func(*args, **kwargs)
-        except mysql.connector.Error as e:
-            common.error("MySQL error {}:".format(e))
+        except mysql.connector.Error as exc:
+            common.error('MySQL error {}:', exc)
             raise MySQLConnectionError
         finally:
             if conn and conn.is_connected():
@@ -39,7 +46,7 @@ def handle_connection(func):
 
 
 class MySQLDatabase(db_base.BaseDatabase):
-    def __init__(self, test_config=None):
+    def __init__(self, test_config=None):  # pylint: disable=super-on-old-class
         self.is_mysql_database = True
         self.database = 'netflix_addon'
         if test_config:
@@ -61,23 +68,23 @@ class MySQLDatabase(db_base.BaseDatabase):
 
     def _initialize_connection(self):
         try:
-            common.debug('Trying connection to the MySQL database {}'.format(self.database))
+            common.debug('Trying connection to the MySQL database {}', self.database)
             self.conn = mysql.connector.connect(**self.config)
             if self.conn.is_connected():
                 db_info = self.conn.get_server_info()
-                common.debug('MySQL database connection was successful (MySQL server ver. {})'
-                             .format(db_info))
-        except mysql.connector.Error as e:
-            if e.errno == 1049 and not self.is_connection_test:
+                common.debug('MySQL database connection was successful (MySQL server ver. {})',
+                             db_info)
+        except mysql.connector.Error as exc:
+            if exc.errno == 1049 and not self.is_connection_test:
                 # Database does not exist, create a new one
                 try:
                     db_create_mysql.create_database(self.config.copy())
                     self._initialize_connection()
                     return
                 except mysql.connector.Error as e:
-                    common.error("MySql error {}:".format(e))
+                    common.error('MySql error {}:', e)
                     raise MySQLConnectionError
-            common.error("MySql error {}:".format(e))
+            common.error('MySql error {}:', exc)
             raise MySQLConnectionError
         finally:
             if self.conn and self.conn.is_connected():
@@ -96,12 +103,12 @@ class MySQLDatabase(db_base.BaseDatabase):
                 # 'multi' is lazy statement run sql only when needed
                 for result in results:  # pylint: disable=unused-variable
                     pass
-        except mysql.connector.Error as e:
-            common.error("MySQL error {}:".format(e))
+        except mysql.connector.Error as exc:
+            common.error('MySQL error {}:', exc)
             raise MySQLError
         except ValueError as exc_ve:
-            common.error('Value {}'.format(str(params)))
-            common.error('Value type {}'.format(type(params)))
+            common.error('Value {}', str(params))
+            common.error('Value type {}', type(params))
             raise exc_ve
 
     def _execute_query(self, query, params=None, cursor=None):
@@ -114,12 +121,12 @@ class MySQLDatabase(db_base.BaseDatabase):
             else:
                 cursor.execute(query)
             return cursor
-        except mysql.connector.Error as e:
-            common.error("MySQL error {}:".format(e.args[0]))
+        except mysql.connector.Error as exc:
+            common.error('MySQL error {}:', exc.args[0])
             raise MySQLError
         except ValueError as exc_ve:
-            common.error('Value {}'.format(str(params)))
-            common.error('Value type {}'.format(type(params)))
+            common.error('Value {}', str(params))
+            common.error('Value type {}', type(params))
             raise exc_ve
 
     def get_cursor(self):

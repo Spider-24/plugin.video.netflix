@@ -1,10 +1,15 @@
 # -*- coding: utf-8 -*-
-"""Check if the addon has been updated and make necessary changes"""
+"""
+    Copyright (C) 2017 Sebastian Golasch (plugin.video.netflix)
+    Copyright (C) 2019 Stefano Gottardo - @CastagnaIT (original implementation module)
+    Check if the addon has been updated and make necessary changes
+
+    SPDX-License-Identifier: MIT
+    See LICENSES/MIT.md for more information.
+"""
 from __future__ import absolute_import, division, unicode_literals
 
-import resources.lib.common as common
-
-import resources.lib.upgrade_actions as upgrade_actions
+# import resources.lib.upgrade_actions as upgrade_actions
 from resources.lib.globals import g
 from resources.lib.database.db_update import run_local_db_updates, run_shared_db_updates
 
@@ -35,8 +40,14 @@ def check_service_upgrade():
 
 def _perform_addon_changes(previous_ver, current_ver):
     """Perform actions for an version bump"""
-    common.debug('Initialize addon upgrade operations, from version {} to {})'
-                 .format(previous_ver, current_ver))
+    from resources.lib.common import (debug, is_less_version)
+    debug('Initialize addon upgrade operations, from version {} to {})',
+          previous_ver, current_ver)
+    if previous_ver and is_less_version(previous_ver, '0.15.9'):
+        import resources.lib.kodi.ui as ui
+        msg = ('This update resets the settings to auto-update library.\r\n'
+               'Therefore only in case you are using auto-update must be reconfigured.')
+        ui.show_ok_dialog('Netflix upgrade', msg)
     # Clear cache (prevents problems when netflix change data structures)
     g.CACHE.invalidate(True)
     # Always leave this to last - After the operations set current version
@@ -45,10 +56,9 @@ def _perform_addon_changes(previous_ver, current_ver):
 
 def _perform_service_changes(previous_ver, current_ver):
     """Perform actions for an version bump"""
-    common.debug('Initialize service upgrade operations, from version {} to {})'
-                 .format(previous_ver, current_ver))
-    if previous_ver is None:
-        upgrade_actions.migrate_library_to_db()
+    from resources.lib.common import debug
+    debug('Initialize service upgrade operations, from version {} to {})',
+          previous_ver, current_ver)
     # Always leave this to last - After the operations set current version
     g.LOCAL_DB.set_value('service_previous_version', current_ver)
 
@@ -57,8 +67,9 @@ def _perform_local_db_changes(db_version):
     """Perform database actions for a db version change"""
     db_new_version = '0.1'
     if db_version != db_new_version:
-        common.debug('Initialization of local database updates from version {} to {})'
-                     .format(db_version, db_new_version))
+        from resources.lib.common import debug
+        debug('Initialization of local database updates from version {} to {})',
+              db_version, db_new_version)
         run_local_db_updates(db_version, db_new_version)
         g.LOCAL_DB.set_value('local_db_version', db_new_version)
 
@@ -67,7 +78,8 @@ def _perform_shared_db_changes(db_version):
     """Perform database actions for a db version change"""
     db_new_version = '0.1'
     if db_version != db_new_version:
-        common.debug('Initialization of shared database updates from version {} to {})'
-                     .format(db_version, db_new_version))
+        from resources.lib.common import debug
+        debug('Initialization of shared database updates from version {} to {})',
+              db_version, db_new_version)
         run_shared_db_updates(db_version, db_new_version)
         g.LOCAL_DB.set_value('shared_db_version', db_new_version)

@@ -1,5 +1,12 @@
 # -*- coding: utf-8 -*-
-"""Local database access and functions"""
+"""
+    Copyright (C) 2017 Sebastian Golasch (plugin.video.netflix)
+    Copyright (C) 2019 Stefano Gottardo - @CastagnaIT (original implementation module)
+    Local database access and functions
+
+    SPDX-License-Identifier: MIT
+    See LICENSES/MIT.md for more information.
+"""
 from __future__ import absolute_import, division, unicode_literals
 
 import resources.lib.common as common
@@ -9,11 +16,22 @@ from resources.lib.database.db_exceptions import (ProfilesMissing)
 
 
 class NFLocalDatabase(db_sqlite.SQLiteDatabase):
-    def __init__(self):
+    def __init__(self):  # pylint: disable=super-on-old-class
         super(NFLocalDatabase, self).__init__(db_utils.LOCAL_DB_FILENAME)
 
     def _get_active_guid_profile(self):
         query = 'SELECT Guid FROM profiles WHERE IsActive = 1'
+        cur = self._execute_query(query)
+        result = cur.fetchone()
+        if result is None:
+            raise ProfilesMissing
+        return result[0]
+
+    @db_sqlite.handle_connection
+    def get_guid_owner_profile(self):
+        """Get the guid of owner account profile"""
+        query = 'SELECT Guid FROM profiles_config WHERE ' \
+                'Name = \'isAccountOwner\' AND Value = \'True\''
         cur = self._execute_query(query)
         result = cur.fetchone()
         if result is None:

@@ -1,5 +1,12 @@
 # -*- coding: utf-8 -*-
-"""Navigation for classic plugin directory listing mode"""
+"""
+    Copyright (C) 2017 Sebastian Golasch (plugin.video.netflix)
+    Copyright (C) 2018 Caphm (original implementation module)
+    Navigation for classic plugin directory listing mode
+
+    SPDX-License-Identifier: MIT
+    See LICENSES/MIT.md for more information.
+"""
 from __future__ import absolute_import, division, unicode_literals
 
 import xbmc
@@ -13,17 +20,22 @@ import resources.lib.kodi.listings as listings
 import resources.lib.kodi.ui as ui
 import resources.lib.kodi.library as library
 
+try:  # Python 2
+    unicode
+except NameError:  # Python 3
+    unicode = str  # pylint: disable=redefined-builtin
+
 
 class DirectoryBuilder(object):
     """Builds directory listings"""
     # pylint: disable=no-self-use
     def __init__(self, params):
-        common.debug('Initializing directory builder: {}'.format(params))
+        common.debug('Initializing directory builder: {}', params)
         self.params = params
         # After build url the param value is converted as string
         self.perpetual_range_start = None \
             if self.params.get('perpetual_range_start') == 'None' else self.params.get('perpetual_range_start')
-        self.dir_update_listing = True if self.perpetual_range_start else False
+        self.dir_update_listing = bool(self.perpetual_range_start)
         if self.perpetual_range_start == '0':
             # For cache identifier purpose
             self.perpetual_range_start = None
@@ -37,8 +49,7 @@ class DirectoryBuilder(object):
         autologin = g.ADDON.getSettingBool('autologin_enable')
         profile_id = g.ADDON.getSetting('autologin_id')
         if autologin and profile_id:
-            common.debug('Performing auto-login for selected profile {}'
-                         .format(profile_id))
+            common.info('Performing auto-login for selected profile {}', profile_id)
             api.activate_profile(profile_id)
             self.home(None, False)
         else:
@@ -48,9 +59,7 @@ class DirectoryBuilder(object):
         """Show profiles listing"""
         # pylint: disable=unused-argument
         common.debug('Showing profiles listing')
-        if not api.update_profiles_data():
-            xbmcplugin.endOfDirectory(g.PLUGIN_HANDLE, succeeded=False)
-            return
+        api.update_profiles_data()
         listings.build_profiles_listing()
         _handle_endofdirectory(False, False)
 
@@ -89,7 +98,7 @@ class DirectoryBuilder(object):
             mainmenu_data = menu_data['main_menu']
         if menu_data.get('request_context_name', None) and g.is_known_menu_context(pathitems[2]):
             listings.build_video_listing(
-                api.video_list_sorted(context_name=menu_data['request_context_name'],
+                api.video_list_sorted(menu_data['request_context_name'],
                                       perpetual_range_start=self.perpetual_range_start,
                                       menu_data=mainmenu_data),
                 menu_data, pathitems)
@@ -97,7 +106,7 @@ class DirectoryBuilder(object):
             # Dynamic IDs for common video lists
             list_id = None if pathitems[2] == 'None' else pathitems[2]
             listings.build_video_listing(
-                api.video_list_sorted(context_name=menu_data['request_context_name'],
+                api.video_list_sorted(menu_data['request_context_name'],
                                       context_id=list_id,
                                       perpetual_range_start=self.perpetual_range_start,
                                       menu_data=mainmenu_data),
@@ -116,7 +125,12 @@ class DirectoryBuilder(object):
 
     def season(self, videoid, pathitems):
         """Show episodes of a season"""
-        listings.build_episode_listing(videoid, api.episodes(videoid), pathitems)
+        listings.build_episode_listing(videoid,
+                                       api.episodes(
+                                           videoid,
+                                           videoid_value=unicode(videoid),
+                                           perpetual_range_start=self.perpetual_range_start),
+                                       pathitems)
         _handle_endofdirectory(self.dir_update_listing)
 
     @common.time_execution(immediate=False)
@@ -188,7 +202,11 @@ def _ask_search_term_and_redirect():
         xbmcplugin.endOfDirectory(g.PLUGIN_HANDLE, succeeded=True)
         xbmc.executebuiltin('Container.Update({})'.format(url))
     else:
-        xbmcplugin.endOfDirectory(g.PLUGIN_HANDLE, succeeded=False)
+        url = common.build_url(pathitems=['home'],
+                               params={'profile_id': g.LOCAL_DB.get_active_profile_guid()},
+                               mode=g.MODE_DIRECTORY)
+        xbmcplugin.endOfDirectory(g.PLUGIN_HANDLE, succeeded=True)
+        xbmc.executebuiltin('Container.Update({},replace)'.format(url))  # replace=reset history
 
 
 @common.time_execution(immediate=False)

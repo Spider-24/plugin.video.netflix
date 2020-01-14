@@ -33,7 +33,7 @@ msgid "Recommendations"
 msgstr ""
 
 msgctxt "#30002"
-msgid "Adult Pin"
+msgid "Enter PIN to watch restricted content"
 msgstr ""
 
 msgctxt "#30003"
@@ -49,11 +49,11 @@ msgid "E-mail"
 msgstr ""
 
 msgctxt "#30006"
-msgid "Adult verification failed"
+msgid "Incorrect PIN. Try again."
 msgstr ""
 
 msgctxt "#30007"
-msgid "Please Check your adult pin"
+msgid "Parental Control PIN (4 digits)"
 msgstr ""
 
 msgctxt "#30008"
@@ -61,7 +61,7 @@ msgid "Login failed"
 msgstr ""
 
 msgctxt "#30009"
-msgid "Please Check your credentials"
+msgid "Please check your e-mail and password"
 msgstr ""
 
 msgctxt "#30010"
@@ -82,6 +82,14 @@ msgstr ""
 
 msgctxt "#30014"
 msgid "Account"
+msgstr ""
+
+msgctxt "#30015"
+msgid "Other options"
+msgstr ""
+
+msgctxt "#30016"
+msgid "ESN"
 msgstr ""
 
 msgctxt "#30017"
@@ -133,7 +141,7 @@ msgid "Playback error"
 msgstr ""
 
 msgctxt "#30029"
-msgid "Missing Inputstream addon"
+msgid "Missing InputStream addon"
 msgstr ""
 
 msgctxt "#30030"
@@ -141,7 +149,7 @@ msgid "Remove from library"
 msgstr ""
 
 msgctxt "#30031"
-msgid "Change library title"
+msgid "General"
 msgstr ""
 
 msgctxt "#30032"
@@ -153,7 +161,7 @@ msgid "Enable Dolby Digital Plus (DDPlus HQ and Atmos on Premium)"
 msgstr ""
 
 msgctxt "#30034"
-msgid "ESN (set automatically, can be changed manually)"
+msgid "Manual ESN"
 msgstr ""
 
 msgctxt "#30035"
@@ -197,11 +205,11 @@ msgid "View for profiles"
 msgstr ""
 
 msgctxt "#30045"
-msgid "[COLOR cyan][B]-- NEXT PAGE --[/B][/COLOR]"
+msgid "Thumb rating removed|You rated a thumb down|You rated a thumb up"
 msgstr ""
 
 msgctxt "#30046"
-msgid "Inputstream addon is not enabled"
+msgid "InputStream addon is not enabled"
 msgstr ""
 
 msgctxt "#30047"
@@ -265,7 +273,7 @@ msgid "Update inside library"
 msgstr ""
 
 msgctxt "#30062"
-msgid "Enable/disable adult pin. Active:"
+msgid "Parental controls"
 msgstr ""
 
 msgctxt "#30063"
@@ -273,15 +281,15 @@ msgid "new episodes added to library"
 msgstr ""
 
 msgctxt "#30064"
-msgid "Export new episodes"
+msgid "Perform auto-update"
 msgstr ""
 
 msgctxt "#30065"
-msgid "Auto-update"
+msgid "Auto-update for tv shows seasons and episodes"
 msgstr ""
 
 msgctxt "#30066"
-msgid "never"
+msgid "Debug logging level"
 msgstr ""
 
 msgctxt "#30067"
@@ -433,7 +441,7 @@ msgid "Error details have been written to the Kodi logfile. If the error message
 msgstr ""
 
 msgctxt "#30104"
-msgid "The addon encountered to following error:"
+msgid "The addon encountered the following error:"
 msgstr ""
 
 msgctxt "#30105"
@@ -445,11 +453,11 @@ msgid "Invalid PIN"
 msgstr ""
 
 msgctxt "#30107"
-msgid "Disabled PIN verfication"
+msgid "PIN protection is off."
 msgstr ""
 
 msgctxt "#30108"
-msgid "Enabled PIN verfication"
+msgid "All content is protected by PIN."
 msgstr ""
 
 msgctxt "#30109"
@@ -569,11 +577,11 @@ msgid "Enable VP9 profiles (disable if it causes artifacts)"
 msgstr ""
 
 msgctxt "#30138"
-msgid "The requested action timed out. The background services may not yet be available if you just started Kodi/the addon. In this case, try again in a moment."
+msgid "The background services may not yet be available if you just started Kodi/the addon. In this case, try again in a moment."
 msgstr ""
 
 msgctxt "#30139"
-msgid "Enable IPC over HTTP (use when experiencing AddonSignals timeouts)"
+msgid "Enable IPC over HTTP (use when Addon Signals timeout messages appear)"
 msgstr ""
 
 msgctxt "#30140"
@@ -733,11 +741,11 @@ msgid "Open UpNext Addon settings"
 msgstr ""
 
 msgctxt "#30179"
-msgid "Show the trailers"
+msgid "Show trailers & more"
 msgstr ""
 
 msgctxt "#30180"
-msgid "No trailers available"
+msgid "There has been a problem with login, it is possible that your account has not been confirmed or renewed."
 msgstr ""
 
 msgctxt "#30181"
@@ -870,4 +878,84 @@ msgstr ""
 
 msgctxt "#30213"
 msgid "InputStream Helper settings..."
+msgstr ""
+
+msgctxt "#30214"
+msgid "Force the update of my list"
+msgstr ""
+
+msgctxt "#30215"
+msgid "Highlight titles included in my list with a color"
+msgstr ""
+
+msgctxt "#30216"
+msgid "Show ESN in use"
+msgstr ""
+
+msgctxt "#30217"
+msgid "Reset ESN"
+msgstr ""
+
+msgctxt "#30218"
+msgid "Are you sure you want to reset the ESN?\r\nIf you confirm, wait until you receive the login message."
+msgstr ""
+
+msgctxt "#30219"
+msgid "Disable notification for synchronization completed"
+msgstr ""
+
+msgctxt "#30220"
+msgid "The Kodi library has been updated"
+msgstr ""
+
+msgctxt "#30221"
+msgid "Owner account"
+msgstr ""
+
+msgctxt "#30222"
+msgid "Kid account"
+msgstr ""
+
+msgctxt "#30223"
+msgid "Synchronization now uses \"My List\" of profile {}"
+msgstr ""
+
+msgctxt "#30224"
+msgid "Auto update mode"
+msgstr ""
+
+msgctxt "#30225"
+msgid "Manual"
+msgstr ""
+
+msgctxt "#30226"
+msgid "Scheduled"
+msgstr ""
+
+msgctxt "#30227"
+msgid "Synchronize Kodi library with My List"
+msgstr ""
+
+msgctxt "#30228"
+msgid "Use \"My list\" of the current profile"
+msgstr ""
+
+msgctxt "#30229"
+msgid "Show the name of the selected profile"
+msgstr ""
+
+msgctxt "#30230"
+msgid "Check for updates now"
+msgstr ""
+
+msgctxt "#30231"
+msgid "Do you want to check update now?"
+msgstr ""
+
+msgctxt "#30232"
+msgid "Restrict by Maturity Level"
+msgstr ""
+
+msgctxt "#30233"
+msgid "Content for {} will require the PIN to start playback."
 msgstr ""

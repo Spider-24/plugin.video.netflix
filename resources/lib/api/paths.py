@@ -1,6 +1,14 @@
 # -*- coding: utf-8 -*-
-"""Path info to query the Shakti pathEvaluator"""
+"""
+    Copyright (C) 2017 Sebastian Golasch (plugin.video.netflix)
+    Copyright (C) 2018 Caphm (original implementation module)
+    Path info to query the Shakti pathEvaluator
+
+    SPDX-License-Identifier: MIT
+    See LICENSES/MIT.md for more information.
+"""
 from __future__ import absolute_import, division, unicode_literals
+from future.utils import iteritems
 
 import resources.lib.common as common
 
@@ -17,8 +25,9 @@ ART_SIZE_SD = '_665x375'
 LENGTH_ATTRIBUTES = {
     'stdlist': lambda r, context, key: len(r[context][key]),
     'stdlist_wid': lambda r, context, uid, key: len(r[context][uid][key]),
-    'searchlist': lambda r, context, key: len(next(r[context][key].itervalues()))
+    'searchlist': lambda r, context, key: len(list(r[context][key].values())[0]),
 }
+
 """Predefined lambda expressions that return the number of video results within a path response dict"""
 
 ART_PARTIAL_PATHS = [
@@ -33,13 +42,13 @@ VIDEO_LIST_PARTIAL_PATHS = [
     [['summary', 'title', 'synopsis', 'regularSynopsis', 'evidence', 'queue',
       'episodeCount', 'info', 'maturity', 'runtime', 'seasonCount',
       'releaseYear', 'userRating', 'numSeasonsLabel', 'bookmarkPosition',
-      'watched', 'delivery']],
+      'dpSupplementalMessage', 'watched', 'delivery']],
     [['genres', 'tags', 'creators', 'directors', 'cast'],
      {'from': 0, 'to': 10}, ['id', 'name']]
 ] + ART_PARTIAL_PATHS
 
 VIDEO_LIST_BASIC_PARTIAL_PATHS = [
-    [['title', 'queue', 'watched']]
+    [['title', 'queue', 'watched', 'summary', 'type', 'id']]
 ]
 
 GENRE_PARTIAL_PATHS = [
@@ -62,11 +71,20 @@ EPISODES_PARTIAL_PATHS = [
      {'from': 0, 'to': 10}, ['id', 'name']]
 ] + ART_PARTIAL_PATHS
 
+TRAILER_PARTIAL_PATHS = [
+    [['availability', 'summary', 'synopsis', 'title', 'trackId', 'delivery', 'runtime']]
+] + ART_PARTIAL_PATHS
+
+VIDEO_LIST_RATING_THUMB_PATHS = [
+    [['summary', 'title', 'userRating', 'trackIds']]
+]
+
 INFO_MAPPINGS = {
     'title': 'title',
     'year': 'releaseYear',
     'plot': 'synopsis',
     'season': ['summary', 'season'],
+    'season_shortname': ['summary', 'shortName'],  # Add info to item listings._create_season_item
     'episode': ['summary', 'episode'],
     'rating': ['userRating', 'matchScore'],
     'userrating': ['userRating', 'userRating'],
@@ -76,11 +94,8 @@ INFO_MAPPINGS = {
     # 'playcount': 'watched'
 }
 
-TRAILER_PARTIAL_PATHS = [
-    [['availability', 'summary', 'synopsis', 'title', 'trackId', 'delivery']]
-] + ART_PARTIAL_PATHS
-
 INFO_TRANSFORMATIONS = {
+    'season_shortname': lambda sn: ''.join([n for n in sn if n.isdigit()]),
     'rating': lambda r: r / 10,
     'playcount': lambda w: int(w)  # pylint: disable=unnecessary-lambda
 }
@@ -107,31 +122,29 @@ def iterate_references(source):
     list.
     Items with a key that do not represent an integer are ignored."""
     for index, ref in sorted({int(k): v
-                              for k, v in source.iteritems()
-                              if common.is_numeric(k)}.iteritems()):
+                              for k, v in iteritems(source)
+                              if common.is_numeric(k)}.items()):
         path = reference_path(ref)
         if path is None:
             break
-        elif path[0] == 'characters':
+        if path[0] == 'characters':
             # TODO: Implement handling of character references in Kids profiles
             continue
-        else:
-            yield (index, path)
+        yield (index, path)
 
 
 def count_references(source):
     counter = 0
     for index, ref in sorted({int(k): v  # pylint: disable=unused-variable
-                              for k, v in source.iteritems()
-                              if common.is_numeric(k)}.iteritems()):
+                              for k, v in iteritems(source)
+                              if common.is_numeric(k)}.items()):
         path = reference_path(ref)
 
         if path is None:
             continue
-        elif path[0] == 'characters':
+        if path[0] == 'characters':
             continue
-        else:
-            counter += 1
+        counter += 1
     return counter
 
 
@@ -196,7 +209,7 @@ def reference_path(ref):
     ref = _remove_nesting(ref)
     if isinstance(ref, list):
         return ref
-    elif isinstance(ref, dict):
+    if isinstance(ref, dict):
         return ref['value'] if ref.get('$type') == 'ref' else None
     raise InvalidReferenceError(
         'Unexpected reference format encountered: {}'.format(ref))
