@@ -104,7 +104,7 @@ def get_library_item_details(dbtype, itemid):
 
 def scan_library(path=""):
     """Start a library scanning in a specified folder"""
-    method = 'Videon'
+    method = 'VideoLibrary.Scan'
     params = {'directory': path}
     return json_rpc(method, params)
 

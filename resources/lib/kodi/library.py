@@ -148,10 +148,10 @@ def sync_mylist_to_library():
                               nfo_settings=nfo_settings)
         
         xbmc.sleep(random.randint(1, 10)) #add randomness to avoid connection problems
-        
+        break
 
-    
-    refresh_library()
+    common.send_signal(common.Signals.LIBRARY_REFRESH_REQUESTED)
+    #refresh_library()
 
 def refresh_library(): #Ben's
 

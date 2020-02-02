@@ -14,6 +14,8 @@ from datetime import datetime, timedelta
 import AddonSignals
 import xbmc
 
+import xbmcgui #Ben
+
 from resources.lib.globals import g
 import resources.lib.common as common
 import resources.lib.kodi.library as kodi_library
@@ -44,6 +46,10 @@ class LibraryUpdateService(xbmc.Monitor):
         AddonSignals.registerSlot(
             g.ADDON.getAddonInfo('id'), common.Signals.LIBRARY_UPDATE_REQUESTED,
             self.update_kodi_library)
+
+        AddonSignals.registerSlot(
+            g.ADDON.getAddonInfo('id'), common.Signals.LIBRARY_REFRESH_REQUESTED,
+            self.refresh_kodi_library)
 
     def on_tick(self):
         """Check if update is due and trigger it"""
@@ -99,6 +105,7 @@ class LibraryUpdateService(xbmc.Monitor):
         # Kodi cancels the update if called with JSON RPC twice
         # so we monitor events to ensure we're not cancelling a previous scan
         if library == 'video':
+            print('Ben: Scanning finished...')
             self.scan_in_progress = False
             if self.scan_awaiting:
                 self.update_kodi_library()
@@ -111,7 +118,7 @@ class LibraryUpdateService(xbmc.Monitor):
         if not self.scan_in_progress:
             common.debug('Scan is not in progress...') #Ben
             common.debug(kodi_library.library_path())
-            return
+            #return
             self.scan_awaiting = False
             common.scan_library(
                 xbmc.makeLegalFilename(
@@ -119,6 +126,72 @@ class LibraryUpdateService(xbmc.Monitor):
                         kodi_library.library_path())))
         else:
             self.scan_awaiting = True
+
+    def refresh_kodi_library(self, data=None):
+        common.debug('refresh_kodi_library: Data:') #Ben
+        common.debug(data) #Ben
+        xbmc.sleep(500)
+        while self.scan_in_progress:
+            common.debug('refresh_kodi_library: Scan is in progress...') #Ben
+            xbmc.sleep(500)
+        common.debug('refresh_kodi_library: Initiates refresh...') #Ben
+        self.refresh_library()
+
+    
+    def refresh_library(self): #Ben's
+
+        pDialog = xbmcgui.DialogProgressBG()
+        pDialog.create('Netflix Library Scan')
+
+        filters = {'and': [
+                    {'field': 'path', 'operator': 'contains',
+                    'value': 'plugin.video.netflix'}
+                ]}
+        
+        movies = common.get_library_items('movie', filters)
+        shows = common.get_library_items('tvshow', filters)
+        print(shows)
+        
+        for show in shows:
+            pDialog.update(message='Scanning {}'.format(show['label']))
+            test = common.refresh_library_item('tvshow', show['tvshowid'])
+            print('Returned str for {} = {}'.format(show['label'], test))
+            #print('CVideoLibraryQueue::IsScanningLibrary() = {}'.format(xbmc.CVideoLibraryQueue.IsScanningLibrary()))
+            while self.scan_in_progress:
+                common.debug('refresh_kodi_library: Scan is in progress...') #Ben
+                xbmc.sleep(500)
+            
+
+            """filters = {'and': [
+                        {'field': 'path', 'operator': 'contains',
+                        'value': show['file']}
+                    ]}
+
+            episodes = common.get_library_items('episode', filters)
+            print(episodes)
+            
+
+            xbmc.sleep(100) #gives Kodi time to get info about the show
+
+            for episode in episodes:
+                pDialog.update(message='Scanning "{}" - file: "{}"'.format(show['label'], episode['label']))
+                test = common.refresh_library_item('episode', episode['episodeid'])
+                print('Returned str = {}'.format(test))
+                xbmc.sleep(1) #gives Kodi time to get info about the show"""
+        
+
+        for movie in movies:
+            pDialog.update(message='Scanning {}'.format(movie['label']))
+            common.refresh_library_item('movie', movie['movieid'])
+            xbmc.sleep(100) #gives Kodi time to get info about the show
+
+
+        pDialog.close()
+
+        line1 = "Finished scanning Netflix library"
+
+        xbmcgui.Dialog().ok('Netflix', line1)   
+
 
 
 def _compute_next_schedule():

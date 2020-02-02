@@ -123,8 +123,9 @@ def _compile_export_season_tasks(videoid, show, season, nfo_settings):
 
 def _create_export_episode_task(videoid, episode, season, show, nfo_settings):
     """Export a single episode to the library"""
-    filename = 'S{:02d}E{:02d}'.format(season['seq'], episode['seq'])
+    filename = 'S{:02d}E{:02d} - {}'.format(season['seq'], episode['seq'], episode['title'])
     title = ' - '.join((show['title'], filename, episode['title']))
+    #folder =  '{} ({})'.format(show['title'], show['year'])
     return _create_export_item_task(
         title, FOLDER_TV, videoid, show['title'], filename,
         nfo.create_episode_nfo(episode, season, show)
